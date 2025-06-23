@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FAQ - QuantumSafe</title>
+    <title>FAQ - QuantumSure</title>
     <link rel="stylesheet" href="main.css">
 </head>
 <body>
     <header>
         <nav>
-            <div class="logo">QuantumSafe</div>
+            <div class="logo">QuantumSure</div>
             <ul>
-                <li><a href="index.html">Home</a></li>
+                <li><a href="./">Home</a></li>
                 <li><a href="about.html">About</a></li>
-                <li><a href="documentation.html">Documentation</a></li>
-                <li><a href="faq.html" class="active">FAQ</a></li>
+                <li><a href="docs.html">Documentation</a></li>
+                <li><a href="faqs.html" class="active">FAQ</a></li>
                 <li><a href="#" class="btn">Get Started</a></li>
             </ul>
         </nav>
@@ -24,15 +24,36 @@
         <h1>Frequently Asked Questions</h1>
         <div class="faq-item">
             <h3>What is quantum-resistant cryptography?</h3>
-            <p>It’s a set of cryptographic algorithms designed to remain secure against attacks from quantum computers.</p>
+            <p>It is a set of cryptographic algorithms designed to remain secure against attacks from quantum computers.</p>
         </div>
         <div class="faq-item">
-            <h3>How does QuantumSafe protect my data?</h3>
-            <p>We use NIST-approved post-quantum algorithms and real-time monitoring to ensure robust security.</p>
+            <h3>How does QuantumSure protect my data?</h3>
+            <p>QuantumSure uses NIST-approved post-quantum algorithms and real-time monitoring to ensure robust security. Taking the threat of Quantum Computing very seriously, QuantumSure uses multilayered algorithms, integrating Fernet-like cryptography, Kyber 1024, and decoy keys to ensure the client data is ready to stand to the test of hacking and malicious actors in a post-quantum world.</p>
         </div>
         <div class="faq-item">
             <h3>Can I integrate QuantumSafe with my existing systems?</h3>
-            <p>Yes, our SaaS platform is designed for seamless integration. Check our <a href="documentation.html">documentation</a> for details.</p>
+            <p>Yes, our SaaS platform is designed for seamless integration. Check our <a href="docs.html">documentation</a> for details.</p>
+        <div class="faq-item">
+            <h3>Do I need to share my sensitive data for this?</h3>
+            <p>NO. QuantumSure works by doubly encrypting your data, meaning it only expects the encrypted data that your existing systems have already encrypted to the best of their capability. It then adds a quantum-resistant encryption layer on top, and outputs the doubly encrypted data to you, so you can replace your singly encrypted data in your database with it. The decryption works the same way.</p>
+        <div class="faq-item">
+            <h3>Can I use unencrypted data directly?</h3>
+            <p>If you have unencrypted data, currently not subject to any cryptographic algorithm, QuantumSure can operate on that as well. We just brought up the above point about re-encryption to highlight that we don't need your previously encoded data to be decoded to work.</p>
+        <div class="faq-item">
+            <h3>What format of requests does QuantumSure expect?</h3>
+            <p>QuantumSure requires the text in string format, along with the api key, and the public key in the request header. The exact tutorial can be viewed in <a href="docs.html">documentation</a>.</p>
+        </div>
+        <div class="faq-item">
+            <h3>What is the pricing like?</h3>
+            <p>QuantumSure has different tiers. For small teams and individuals, it is $5.99 a month for a 1000 encrypt requests (decryption is free). For medium-sized companies, it is $12.99 for 15000 encrypt requests a month. For entreprise level clients, it is $49.99 for 100000 encrypt request a month. Please reach out to our team if you require a custom tier.</p>
+        </div>
+        <div class="faq-item">
+            <h3>Sounds good, where can I sign up?</h3>
+            <p>Please go to <a href="plans.html">Plans</a> and choose your tier.</p>
+        </div>
+
+        </div>
+        </div>
         </div>
     </section>
 

@@ -3,32 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Documentation - QuantumSafe</title>
+    <title>Documentation - QuantumSure</title>
     <link rel="stylesheet" href="main.css">
 </head>
 <body>
     <header>
         <nav>
-            <div class="logo">QuantumSafe</div>
+            <div class="logo">QuantumSure</div>
             <ul>
-                <li><a href="index.html">Home</a></li>
+                <li><a href="./">Home</a></li>
                 <li><a href="about.html">About</a></li>
-                <li><a href="documentation.html" class="active">Documentation</a></li>
-                <li><a href="faq.html">FAQ</a></li>
+                <li><a href="docs.html" class="active">Documentation</a></li>
+                <li><a href="faqs.html">FAQ</a></li>
                 <li><a href="#" class="btn">Get Started</a></li>
             </ul>
         </nav>
     </header>
 
     <section class="content">
-        <h1>QuantumSafe Documentation</h1>
+        <h1>QuantumSure Documentation</h1>
         <p>Get started with our API and integration guides. Explore our comprehensive resources to implement quantum-resistant cryptography in your systems.</p>
         <ul>
-            <li><a href="#">API Reference</a></li>
-            <li><a href="#">Integration Guide</a></li>
-            <li><a href="#">Security Best Practices</a></li>
+            <li><a onclick="location.href='#api'">API Reference</a></li>
+            <li><a onclick="location.href='#integration'">Integration Guide</a></li>
+            <li><a onclick="location.href='#bestpractices'">Security Best Practices</a></li>
         </ul>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+        <div style="font-size: 1.8em; color: #00ff88" id="api">API Reference</div>
+        <div style="font-size: 1.4em; color: #00ff88">Create Key</div>
+        <p>
+        Creates a new API Key and Public Key for your use. <br/> URI: http://localhost:5000/api/quantumsure/create <br/> Expected Parameters: none <br/> Output: secret_phrase (string), public_key (string) <br/> Example: <br/>try{ <br/>
+    const res = await axios.post("http://localhost:5000/api/quantumsure/create", {<br/>
+      data: null,<br/>
+    });<br/>
+
+  console.log(res); <br/>
+  }<br/>
+  catch (err){<br/>
+    console.log(err);<br/>
+  }<br/>
+        </p>
+        <div style="font-size: 1.4em; color: #00ff88">Delete Key</div>
+        <p>
+        Deletes the API Key and corresponding Public Key. <br/> URI: http://localhost:5000/api/quantumsure/delete <br/> Expected Parameters: api_key (string), secret_phrase (string)<br/> Example: <br/> const data = { <br/>
+    api_key: "yourkey", <br/>
+    secret_phrase: "yourphrase", <br/>
+  }; <br/>
+  try{ <br/>
+    const res = await axios.post("http://localhost:5000/api/quantumsure/delete", { <br/>
+      data: data, <br/>
+    }); <br/>
+
+  console.log(res); <br/>
+  } <br/>
+  catch (err){ <br/>
+    console.log(err); <br/>
+  } <br/>
+        </p>
+        <div style="font-size: 1.4em; color: #00ff88">Encrypt Data</div>
+        <p>
+        Encrypts the target string with Quantum Resistant Cryptographic Algorithms. <br/> URI: http://localhost:5000/api/quantumsure/encrypt <br/> Expected Headers: api_key (string), public_key (string) <br/> Expected Parameters: normal_text (string) <br/> Output: encrypted_text (string)<br/> Example: <br/> const data = { <br/>
+    normal_text: "let us test some sample text to encrypt", <br/>
+  }; <br/>
+  const headers = { <br/>
+        'api_key': "yourapikey", <br/>
+        'public_key': "yourpublickey" <br/>
+        }; <br/>
+
+        try{ <br/>
+    const res = await axios.post("http://localhost:5000/api/quantumsure/encrypt", { <br/>
+      data: data, <br/>
+    }, { <br/>
+      headers: headers <br/>
+    }); <br/>
+
+  console.log(res); <br/>
+  } <br/>
+  catch (err){ <br/>
+    console.log(err); <br/>
+  } <br/>
+        </p>
+        <div style="font-size: 1.4em; color: #00ff88">Decrypt Data</div>
+        <p>
+        Decrypts the target encrypted text string back to the text you provided in the Encrypt request. <br/> URI: http://localhost:5000/api/quantumsure/decrypt <br/> Expected Headers: api_key (string) <br/> Expected Parameters: encrypted_text (string)<br/>Output: normal_text (string)<br/> Example: <br/> const data = { <br/>
+        encrypted_text: "yourencryptedtext"<br/>
+        };<br/>
+        const headers = { <br/>
+        'api_key': "9751750412188204396", <br/>
+  } <br/>
+  try{ <br/>
+    const res = await axios.post("http://localhost:5000/api/quantumsure/decrypt", { <br/>
+      data: data <br/>
+      }, <br/>
+      { <br/>
+      headers: headers <br/>
+      }); <br/>
+
+  console.log(res); <br/>
+  } <br/>
+  catch (err){ <br/>
+    console.log(err); <br/>
+  } <br/>
+        </p>
+        <div style="font-size: 1.8em; color: #00ff88" id="integration">Integration Guide</div>
+        <div style="font-size: 1.4em; color: #00ff88">Creating a Key</div>
+        <p>Currently we are providing a free sample in <a>plans</a>. Please click on 'generate my keys'. Safely store the secret phrase, api key and the public key, since we do NOT keep them on our end (to make it impossible for even us to read your data). If you lose these, your data can NEVER be recovered.</p>
+        <div style="font-size: 1.4em; color: #00ff88">Deleting a Key</div>
+        <p>Go to <a>plans</a> and click on 'delete my keys' after inputting your secret phrase and api key. Note that this is irreversible.</p>
+        <div style="font-size: 1.4em; color: #00ff88">Encrypting and Decrypting Data</div>
+        <p>In your javascript project, in the .env file of your root directory, keep the public key (PUBLIC_KEY), API Key (API_KEY), and secret phrase (SECRET) as environmental variables, and then call the functions as shown in the API Reference section. Access the returned values with res.data.encrypted_text or res.data.normal_text.</p>
+
+        <div style="font-size: 1.8em; color: #00ff88" id="bestpractices">Best Practices</div>
+        <p>Please DO NOT share your secret_phrase, api_key, or public_key with anyone, because that would allow them to delete your account, and they will also be able to generate a lot of training data by using your keys to generate encrypted text for normal text data.</p>
     </section>
 
     <footer>
