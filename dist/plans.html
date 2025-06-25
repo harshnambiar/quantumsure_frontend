@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plans - QuantumSure</title>
+    <link rel="shortcut icon" href="img/logo.png">
+    <link rel="stylesheet" href="main.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">QuantumSure</div>
+            <ul>
+                <li><a href="./">Home</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="docs.html">Documentation</a></li>
+                <li><a href="faqs.html">FAQ</a></li>
+                <li><a href="plans.html" class="btn">Plans</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <br/>
+    <section class="features2">
+        <h2>Our Plans</h2>
+        <div class="feature2-grid">
+            <div class="feature2-card">
+                <h3>$5.99 / month</h3>
+                <p>1000 encrypt requests a month</p>
+            </div>
+            <div class="feature2-card">
+                <h3>$12.99 / month</h3>
+                <p>15000 encrypt requests a month</p>
+            </div>
+            <div class="feature2-card">
+                <h3>$49.99 / month</h3>
+                <p>100000 encrypt requests a month</p>
+            </div>
+        </div>
+    </section>
+    <section class="features2">
+        <h2>Try Out What We Provide With a 30 Day Free Trial</h2>
+        <div class="feature2-grid">
+            <div class="feature2-card">
+                <h3>100 Encryption Requests</h3>
+                <p>Try it out for free.</p>
+            </div>
+            <div class="feature2-card">
+                <h3>30 Day Validity</h3>
+                <p>Use it on the go, anytime, anywhere over the next month.</p>
+            </div>
+            <div class="feature2-card">
+                <h3>Our Guarantee</h3>
+                <p>Not even you will be able to deduce the private key for your account. If you can, we are offering 1 year worth of subscription for free!</p>
+            </div>
+        </div>
+    </section>
+    <section class="features2">
+        <div class="feature2-grid">
+            <div class="feature2-card" id="keycre2">
+                <h3>Start Free Trial</h3>
+                <p>Click <a onclick="create_key()" style="color: #00ff88; cursor: pointer;">this</a> to start free trial.</p>
+            </div>
+            <div class="feature2-card" id="keycre" style="visibility:hidden">
+                <h3>Your Generated Credentials</h3>
+                <p>Your API Key &nbsp; &nbsp;&nbsp; &nbsp;&nbsp; &nbsp; <a style="background-color: #00ff88;width: 7%;color:black;padding: .5%;border-radius: 3%;cursor: pointer;" onclick="copy1();">Copy</a></p>
+                <p>Your Public Key &nbsp; &nbsp;&nbsp; &nbsp;<a style="background-color: #00ff88;width: 7%;color:black;padding: .5%;border-radius: 3%;cursor: pointer;" onclick="copy2();">Copy</a></p>
+                <p>Your Secret Phrase <a style="background-color: #00ff88;width: 7%;color:black;padding: .5%;border-radius: 3%;cursor: pointer;" onclick="copy3();">Copy</a></p>
+            </div>
+
+        </div>
+    </section>
+
+
+
+    <section class="features">
+        <h2>Not satisfied? Here, you can delete your API Key and your account.</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>WARNING</h3>
+                <p>Make sure to only click this option after decrypting and storing any data on your database that you have used QuantumSure on.</p>
+            </div>
+            <div class="feature-card" id="keydel">
+                <h3 style="color: red; cursor: pointer;" onclick="delete_key();">Delete My API Key</h3>
+                <input id="spdel" style="width: 80%;height: 25%;margin-bottom: 1%" placeholder=" your secret phrase"></input><br/>
+                <input id="akdel" style="width: 80%; height: 25%" placeholder=" your API Key"></input>
+            </div>
+
+        </div>
+    </section>
+
+    <footer>
+        <p>Resurgence Labs &copy; 2025</p>
+    </footer>
+
+    <script src="main.js"></script>
+</body>
+</html>

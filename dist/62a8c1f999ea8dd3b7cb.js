@@ -13,7 +13,7 @@ async function delete_key(){
         secret_phrase: secret,
     };
     try{
-        const res = await axios.post("https://quantumsure.onrender.com/api/quantumsure/delete", {
+        const res = await axios.post("http://localhost:5000/api/quantumsure/delete", {
         data: data,
         });
         document.getElementById('keydel').innerHTML = `

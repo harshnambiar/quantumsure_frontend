@@ -168,50 +168,6 @@ nav ul li a:hover, nav ul li a.active {
     color: #c0c0ff;
 }
 
-
-.features2 {
-    padding: 3rem 2%;
-    text-align: center;
-    background: #12122a;
-}
-
-.features2 h2 {
-    font-size: 2.5rem;
-    margin-bottom: 3rem;
-    color: #00ff88;
-}
-
-.feature2-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.feature2-card {
-    background: rgba(20, 20, 40, 0.8);
-    padding: 2rem;
-    border-radius: 10px;
-    transition: transform 0.3s, box-shadow 0.3s;
-    border: 1px solid #00ff88;
-}
-
-.feature2-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
-}
-
-.feature2-card h3 {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-}
-
-.feature2-card p {
-    font-size: 1rem;
-    color: #c0c0ff;
-}
-
 /* Content Section */
 .content {
     padding: 8rem 5% 5rem;
