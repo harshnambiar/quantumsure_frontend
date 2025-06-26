@@ -31,6 +31,8 @@ nav {
     margin: 0 auto;
 }
 
+
+
 .logo {
     font-size: 1.5rem;
     font-weight: bold;
@@ -70,6 +72,13 @@ nav ul li a:hover, nav ul li a.active {
 .btn:hover {
     background: #00cc66;
 }
+
+.innerexample {
+    background-color: #00ff88;
+    color: #0a0a1a;
+    padding-left:2%;
+}
+
 
 /* Hero Section */
 .hero {
@@ -281,6 +290,15 @@ footer p {
     }
 
     .hero p {
+        font-size: 1rem;
+    }
+    .example {
+        font-size: 0.9rem;
+    }
+    .innerexample {
+        background-color: #00ff88;
+        color: #0a0a1a;
+        padding-left:2%;
         font-size: 1rem;
     }
 }

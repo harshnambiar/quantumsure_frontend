@@ -32,9 +32,9 @@
         </ul>
         <div style="font-size: 1.8em; color: #00ff88" id="api">API Reference</div>
         <div style="font-size: 1.4em; color: #00ff88">Create Key</div>
-        <p>
-        Creates a new API Key and Public Key for your use. <br/> URI: https://quantumsure.onrender.com/api/quantumsure/create <br/> Expected Parameters: none <br/> Output: secret_phrase (string), public_key (string) <br/> Example: <br/><div style="background-color: #00ff88; color: #0a0a1a;padding-left:2%">try{ <br/>
-    const res = await axios.post("https://quantumsure.onrender.com/api/quantumsure/create", {<br/>
+        <p class="example">
+        Creates a new API Key and Public Key for your use. <br/> URI: https://quantumsure.onrender.com/api/quantumsure/create <br/> Expected Parameters: none <br/> Output: secret_phrase (string), public_key (string) <br/> Example: <br/><div class="innerexample">try{ <br/>
+    const res = await axios.post(URI, {<br/>
       data: null,<br/>
     });<br/>
 
@@ -45,13 +45,13 @@
   }</div><br/>
         </p>
         <div style="font-size: 1.4em; color: #00ff88">Delete Key</div>
-        <p>
-        Deletes the API Key and corresponding Public Key. <br/> URI: https://quantumsure.onrender.com/api/quantumsure/delete <br/> Expected Parameters: api_key (string), secret_phrase (string)<br/> Example: <div style="background-color: #00ff88; color: #0a0a1a;padding-left:2%">const data = { <br/>
+        <p class="example">
+        Deletes the API Key and corresponding Public Key. <br/> URI: https://quantumsure.onrender.com/api/quantumsure/delete <br/> Expected Parameters: api_key (string), secret_phrase (string)<br/> Example: <div class="innerexample">const data = { <br/>
     api_key: "yourkey", <br/>
     secret_phrase: "yourphrase", <br/>
   }; <br/>
   try{ <br/>
-    const res = await axios.post("https://quantumsure.onrender.com/api/quantumsure/delete", { <br/>
+    const res = await axios.post(URI, { <br/>
       data: data, <br/>
     }); <br/>
 
@@ -62,8 +62,8 @@
   } <br/></div>
         </p>
         <div style="font-size: 1.4em; color: #00ff88">Encrypt Data</div>
-        <p>
-        Encrypts the target string with Quantum Resistant Cryptographic Algorithms. <br/> URI: https://quantumsure.onrender.com/api/quantumsure/encrypt <br/> Expected Headers: api_key (string), public_key (string) <br/> Expected Parameters: normal_text (string) <br/> Output: encrypted_text (string)<br/> Example: <br/><div style="background-color: #00ff88; color: #0a0a1a;padding-left:2%"> const data = { <br/>
+        <p class="example">
+        Encrypts the target string with Quantum Resistant Cryptographic Algorithms. <br/> URI: https://quantumsure.onrender.com/api/quantumsure/encrypt <br/> Expected Headers: api_key (string), public_key (string) <br/> Expected Parameters: normal_text (string) <br/> Output: encrypted_text (string)<br/> Example: <br/><div class="innerexample"> const data = { <br/>
     normal_text: "let us test some sample text to encrypt", <br/>
   }; <br/>
   const headers = { <br/>
@@ -72,7 +72,7 @@
         }; <br/>
 
         try{ <br/>
-    const res = await axios.post("https://quantumsure.onrender.com/api/quantumsure/encrypt", { <br/>
+    const res = await axios.post(URI, { <br/>
       data: data, <br/>
     }, { <br/>
       headers: headers <br/>
@@ -85,15 +85,15 @@
   }</div> <br/>
         </p>
         <div style="font-size: 1.4em; color: #00ff88">Decrypt Data</div>
-        <p>
-        Decrypts the target encrypted text string back to the text you provided in the Encrypt request. <br/> URI: https://quantumsure.onrender.com/api/quantumsure/decrypt <br/> Expected Headers: api_key (string) <br/> Expected Parameters: encrypted_text (string)<br/>Output: normal_text (string)<br/> Example: <br/><div style="background-color: #00ff88; color: #0a0a1a;padding-left:2%"> const data = { <br/>
+        <p class="example">
+        Decrypts the target encrypted text string back to the text you provided in the Encrypt request. <br/> URI: https://quantumsure.onrender.com/api/quantumsure/decrypt <br/> Expected Headers: api_key (string) <br/> Expected Parameters: encrypted_text (string)<br/>Output: normal_text (string)<br/> Example: <br/><div class="innerexample"> const data = { <br/>
         encrypted_text: "yourencryptedtext"<br/>
         };<br/>
         const headers = { <br/>
         'api_key': "yourapikey", <br/>
   } <br/>
   try{ <br/>
-    const res = await axios.post("https://quantumsure.onrender.com/api/quantumsure/decrypt", { <br/>
+    const res = await axios.post(URI, { <br/>
       data: data <br/>
       }, <br/>
       { <br/>
