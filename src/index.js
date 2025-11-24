@@ -4,7 +4,7 @@ import ChaCha20 from 'js-chacha20';
 import { Buffer } from 'buffer';
 
 // === CONFIG ===
-const API_BASE_URL = 'http://localhost:5000/api'; // Update if needed
+const API_BASE_URL = 'https://quantumsure.onrender.com/api'; // Update if needed
 //const API_BASE_URL = 'https://quantumsure.onrender.com/api';
 
 // === CRYPTO HELPERS ===
@@ -131,7 +131,7 @@ async function logoutUser() {
   localStorage.removeItem('apiKey');
   localStorage.removeItem('encryptedPrivateKey');
   currentSession = null;
-  document.getElementById('user-switcher').style.display = 'none';
+  document.getElementById('current-user').innerText = 'None';
   document.getElementById('output').innerText = 'Logged out. Create or switch user.';
 }
 window.logoutUser = logoutUser;
@@ -683,7 +683,17 @@ window.generatePassword = () => {
 // === ON LOAD ===
 window.loadplan = () => {
   const lastApiKey = localStorage.getItem('apiKey');
+  const sessions = JSON.parse(localStorage.getItem(USER_SESSIONS) || '[]');
+  if (sessions.length !== 0) {
+    const options = sessions.map((s, i) => `${i + 1}. ${s.alias} (${s.apiKey.slice(0, 8)}...)`).join('\n');
+    document.getElementById('user-switcher').style.display = 'block';
+
+  }
+
+
+
   if (lastApiKey) {
     switchToSession(lastApiKey);
   }
+
 };
