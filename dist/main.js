@@ -1,9 +1,2710 @@
 /******/ (() => { // webpackBootstrap
-/******/ 	"use strict";
-/******/ 	// The require scope
-/******/ 	var __webpack_require__ = {};
+/******/ 	var __webpack_modules__ = ({
+
+/***/ 251:
+/***/ ((__unused_webpack_module, exports) => {
+
+/*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
+exports.read = function (buffer, offset, isLE, mLen, nBytes) {
+  var e, m
+  var eLen = (nBytes * 8) - mLen - 1
+  var eMax = (1 << eLen) - 1
+  var eBias = eMax >> 1
+  var nBits = -7
+  var i = isLE ? (nBytes - 1) : 0
+  var d = isLE ? -1 : 1
+  var s = buffer[offset + i]
+
+  i += d
+
+  e = s & ((1 << (-nBits)) - 1)
+  s >>= (-nBits)
+  nBits += eLen
+  for (; nBits > 0; e = (e * 256) + buffer[offset + i], i += d, nBits -= 8) {}
+
+  m = e & ((1 << (-nBits)) - 1)
+  e >>= (-nBits)
+  nBits += mLen
+  for (; nBits > 0; m = (m * 256) + buffer[offset + i], i += d, nBits -= 8) {}
+
+  if (e === 0) {
+    e = 1 - eBias
+  } else if (e === eMax) {
+    return m ? NaN : ((s ? -1 : 1) * Infinity)
+  } else {
+    m = m + Math.pow(2, mLen)
+    e = e - eBias
+  }
+  return (s ? -1 : 1) * m * Math.pow(2, e - mLen)
+}
+
+exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
+  var e, m, c
+  var eLen = (nBytes * 8) - mLen - 1
+  var eMax = (1 << eLen) - 1
+  var eBias = eMax >> 1
+  var rt = (mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0)
+  var i = isLE ? 0 : (nBytes - 1)
+  var d = isLE ? 1 : -1
+  var s = value < 0 || (value === 0 && 1 / value < 0) ? 1 : 0
+
+  value = Math.abs(value)
+
+  if (isNaN(value) || value === Infinity) {
+    m = isNaN(value) ? 1 : 0
+    e = eMax
+  } else {
+    e = Math.floor(Math.log(value) / Math.LN2)
+    if (value * (c = Math.pow(2, -e)) < 1) {
+      e--
+      c *= 2
+    }
+    if (e + eBias >= 1) {
+      value += rt / c
+    } else {
+      value += rt * Math.pow(2, 1 - eBias)
+    }
+    if (value * c >= 2) {
+      e++
+      c /= 2
+    }
+
+    if (e + eBias >= eMax) {
+      m = 0
+      e = eMax
+    } else if (e + eBias >= 1) {
+      m = ((value * c) - 1) * Math.pow(2, mLen)
+      e = e + eBias
+    } else {
+      m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen)
+      e = 0
+    }
+  }
+
+  for (; mLen >= 8; buffer[offset + i] = m & 0xff, i += d, m /= 256, mLen -= 8) {}
+
+  e = (e << mLen) | m
+  eLen += mLen
+  for (; eLen > 0; buffer[offset + i] = e & 0xff, i += d, e /= 256, eLen -= 8) {}
+
+  buffer[offset + i - d] |= s * 128
+}
+
+
+/***/ }),
+
+/***/ 4329:
+/***/ ((module) => {
+
+"use strict";
+
+/*
+ * Copyright (c) 2017, Bubelich Mykola
+ * https, 0x//www.bubelich.com
+ *
+ * (｡◕‿‿◕｡)
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met, 0x
+ *
+ * Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ * ChaCha20 is a stream cipher designed by D. J. Bernstein.
+ * It is a refinement of the Salsa20 algorithm, and it uses a 256-bit key.
+ *
+ * ChaCha20 successively calls the ChaCha20 block function, with the same key and nonce, and with successively increasing block counter parameters.
+ * ChaCha20 then serializes the resulting state by writing the numbers in little-endian order, creating a keystream block.
+ *
+ * Concatenating the keystream blocks from the successive blocks forms a keystream.
+ * The ChaCha20 function then performs an XOR of this keystream with the plaintext.
+ * Alternatively, each keystream block can be XORed with a plaintext block before proceeding to create the next block, saving some memory.
+ * There is no requirement for the plaintext to be an integral multiple of 512 bits.  If there is extra keystream from the last block, it is discarded.
+ *
+ * The inputs to ChaCha20 are
+ * - 256-bit key
+ * - 32-bit initial counter
+ * - 96-bit nonce.  In some protocols, this is known as the Initialization Vector
+ * - Arbitrary-length plaintext
+ *
+ * Implementation derived from chacha-ref.c version 20080118
+ * See for details, 0x http, 0x//cr.yp.to/chacha/chacha-20080128.pdf
+ */
+
+/**
+ *
+ * @param {Uint8Array} key
+ * @param {Uint8Array} nonce
+ * @param {number} counter
+ * @throws {Error}
+ *
+ * @constructor
+ */
+var JSChaCha20 = function (key, nonce, counter) {
+  if (typeof counter === 'undefined') {
+    counter = 0
+  }
+
+  if (!(key instanceof Uint8Array) || key.length !== 32) {
+    throw new Error('Key should be 32 byte array!')
+  }
+
+  if (!(nonce instanceof Uint8Array) || nonce.length !== 12) {
+    throw new Error('Nonce should be 12 byte array!')
+  }
+
+  this._rounds = 20
+  // Constants
+  this._sigma = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574]
+
+  // param construction
+  this._param = [
+    this._sigma[0],
+    this._sigma[1],
+    this._sigma[2],
+    this._sigma[3],
+    // key
+    this._get32(key, 0),
+    this._get32(key, 4),
+    this._get32(key, 8),
+    this._get32(key, 12),
+    this._get32(key, 16),
+    this._get32(key, 20),
+    this._get32(key, 24),
+    this._get32(key, 28),
+    // counter
+    counter,
+    // nonce
+    this._get32(nonce, 0),
+    this._get32(nonce, 4),
+    this._get32(nonce, 8)
+  ]
+
+  // init 64 byte keystream block //
+  this._keystream = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+  ]
+
+  // internal byte counter //
+  this._byteCounter = 0
+}
+
+JSChaCha20.prototype._chacha = function () {
+  var mix = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  var i = 0
+  var b = 0
+
+  // copy param array to mix //
+  for (i = 0; i < 16; i++) {
+    mix[i] = this._param[i]
+  }
+
+  // mix rounds //
+  for (i = 0; i < this._rounds; i += 2) {
+    this._quarterround(mix, 0, 4, 8, 12)
+    this._quarterround(mix, 1, 5, 9, 13)
+    this._quarterround(mix, 2, 6, 10, 14)
+    this._quarterround(mix, 3, 7, 11, 15)
+
+    this._quarterround(mix, 0, 5, 10, 15)
+    this._quarterround(mix, 1, 6, 11, 12)
+    this._quarterround(mix, 2, 7, 8, 13)
+    this._quarterround(mix, 3, 4, 9, 14)
+  }
+
+  for (i = 0; i < 16; i++) {
+    // add
+    mix[i] += this._param[i]
+
+    // store keystream
+    this._keystream[b++] = mix[i] & 0xFF
+    this._keystream[b++] = (mix[i] >>> 8) & 0xFF
+    this._keystream[b++] = (mix[i] >>> 16) & 0xFF
+    this._keystream[b++] = (mix[i] >>> 24) & 0xFF
+  }
+}
+
+/**
+ * The basic operation of the ChaCha algorithm is the quarter round.
+ * It operates on four 32-bit unsigned integers, denoted a, b, c, and d.
+ *
+ * @param {Array} output
+ * @param {number} a
+ * @param {number} b
+ * @param {number} c
+ * @param {number} d
+ * @private
+ */
+JSChaCha20.prototype._quarterround = function (output, a, b, c, d) {
+  output[d] = this._rotl(output[d] ^ (output[a] += output[b]), 16)
+  output[b] = this._rotl(output[b] ^ (output[c] += output[d]), 12)
+  output[d] = this._rotl(output[d] ^ (output[a] += output[b]), 8)
+  output[b] = this._rotl(output[b] ^ (output[c] += output[d]), 7)
+
+  // JavaScript hack to make UINT32 :) //
+  output[a] >>>= 0
+  output[b] >>>= 0
+  output[c] >>>= 0
+  output[d] >>>= 0
+}
+
+/**
+ * Little-endian to uint 32 bytes
+ *
+ * @param {Uint8Array|[number]} data
+ * @param {number} index
+ * @return {number}
+ * @private
+ */
+JSChaCha20.prototype._get32 = function (data, index) {
+  return data[index++] ^ (data[index++] << 8) ^ (data[index++] << 16) ^ (data[index] << 24)
+}
+
+/**
+ * Cyclic left rotation
+ *
+ * @param {number} data
+ * @param {number} shift
+ * @return {number}
+ * @private
+ */
+JSChaCha20.prototype._rotl = function (data, shift) {
+  return ((data << shift) | (data >>> (32 - shift)))
+}
+
+/**
+ *  Encrypt data with key and nonce
+ *
+ * @param {Uint8Array} data
+ * @return {Uint8Array}
+ */
+JSChaCha20.prototype.encrypt = function (data) {
+  return this._update(data)
+}
+
+/**
+ *  Decrypt data with key and nonce
+ *
+ * @param {Uint8Array} data
+ * @return {Uint8Array}
+ */
+JSChaCha20.prototype.decrypt = function (data) {
+  return this._update(data)
+}
+
+/**
+ *  Encrypt or Decrypt data with key and nonce
+ *
+ * @param {Uint8Array} data
+ * @return {Uint8Array}
+ * @private
+ */
+JSChaCha20.prototype._update = function (data) {
+  if (!(data instanceof Uint8Array) || data.length === 0) {
+    throw new Error('Data should be type of bytes (Uint8Array) and not empty!')
+  }
+
+  var output = new Uint8Array(data.length)
+
+  // core function, build block and xor with input data //
+  for (var i = 0; i < data.length; i++) {
+    if (this._byteCounter === 0 || this._byteCounter === 64) {
+      // generate new block //
+
+      this._chacha()
+      // counter increment //
+      this._param[12]++
+
+      // reset internal counter //
+      this._byteCounter = 0
+    }
+
+    output[i] = data[i] ^ this._keystream[this._byteCounter++]
+  }
+
+  return output
+}
+
+// EXPORT //
+if ( true && module.exports) {
+  module.exports = JSChaCha20
+}
+
+
+/***/ }),
+
+/***/ 7526:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+
+exports.byteLength = byteLength
+exports.toByteArray = toByteArray
+exports.fromByteArray = fromByteArray
+
+var lookup = []
+var revLookup = []
+var Arr = typeof Uint8Array !== 'undefined' ? Uint8Array : Array
+
+var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+for (var i = 0, len = code.length; i < len; ++i) {
+  lookup[i] = code[i]
+  revLookup[code.charCodeAt(i)] = i
+}
+
+// Support decoding URL-safe base64 strings, as Node.js does.
+// See: https://en.wikipedia.org/wiki/Base64#URL_applications
+revLookup['-'.charCodeAt(0)] = 62
+revLookup['_'.charCodeAt(0)] = 63
+
+function getLens (b64) {
+  var len = b64.length
+
+  if (len % 4 > 0) {
+    throw new Error('Invalid string. Length must be a multiple of 4')
+  }
+
+  // Trim off extra bytes after placeholder bytes are found
+  // See: https://github.com/beatgammit/base64-js/issues/42
+  var validLen = b64.indexOf('=')
+  if (validLen === -1) validLen = len
+
+  var placeHoldersLen = validLen === len
+    ? 0
+    : 4 - (validLen % 4)
+
+  return [validLen, placeHoldersLen]
+}
+
+// base64 is 4/3 + up to two characters of the original data
+function byteLength (b64) {
+  var lens = getLens(b64)
+  var validLen = lens[0]
+  var placeHoldersLen = lens[1]
+  return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
+}
+
+function _byteLength (b64, validLen, placeHoldersLen) {
+  return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
+}
+
+function toByteArray (b64) {
+  var tmp
+  var lens = getLens(b64)
+  var validLen = lens[0]
+  var placeHoldersLen = lens[1]
+
+  var arr = new Arr(_byteLength(b64, validLen, placeHoldersLen))
+
+  var curByte = 0
+
+  // if there are placeholders, only get up to the last complete 4 chars
+  var len = placeHoldersLen > 0
+    ? validLen - 4
+    : validLen
+
+  var i
+  for (i = 0; i < len; i += 4) {
+    tmp =
+      (revLookup[b64.charCodeAt(i)] << 18) |
+      (revLookup[b64.charCodeAt(i + 1)] << 12) |
+      (revLookup[b64.charCodeAt(i + 2)] << 6) |
+      revLookup[b64.charCodeAt(i + 3)]
+    arr[curByte++] = (tmp >> 16) & 0xFF
+    arr[curByte++] = (tmp >> 8) & 0xFF
+    arr[curByte++] = tmp & 0xFF
+  }
+
+  if (placeHoldersLen === 2) {
+    tmp =
+      (revLookup[b64.charCodeAt(i)] << 2) |
+      (revLookup[b64.charCodeAt(i + 1)] >> 4)
+    arr[curByte++] = tmp & 0xFF
+  }
+
+  if (placeHoldersLen === 1) {
+    tmp =
+      (revLookup[b64.charCodeAt(i)] << 10) |
+      (revLookup[b64.charCodeAt(i + 1)] << 4) |
+      (revLookup[b64.charCodeAt(i + 2)] >> 2)
+    arr[curByte++] = (tmp >> 8) & 0xFF
+    arr[curByte++] = tmp & 0xFF
+  }
+
+  return arr
+}
+
+function tripletToBase64 (num) {
+  return lookup[num >> 18 & 0x3F] +
+    lookup[num >> 12 & 0x3F] +
+    lookup[num >> 6 & 0x3F] +
+    lookup[num & 0x3F]
+}
+
+function encodeChunk (uint8, start, end) {
+  var tmp
+  var output = []
+  for (var i = start; i < end; i += 3) {
+    tmp =
+      ((uint8[i] << 16) & 0xFF0000) +
+      ((uint8[i + 1] << 8) & 0xFF00) +
+      (uint8[i + 2] & 0xFF)
+    output.push(tripletToBase64(tmp))
+  }
+  return output.join('')
+}
+
+function fromByteArray (uint8) {
+  var tmp
+  var len = uint8.length
+  var extraBytes = len % 3 // if we have 1 byte left, pad 2 bytes
+  var parts = []
+  var maxChunkLength = 16383 // must be multiple of 3
+
+  // go through the array every three bytes, we'll deal with trailing stuff later
+  for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
+    parts.push(encodeChunk(uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)))
+  }
+
+  // pad the end with zeros, but make sure to not forget the extra bytes
+  if (extraBytes === 1) {
+    tmp = uint8[len - 1]
+    parts.push(
+      lookup[tmp >> 2] +
+      lookup[(tmp << 4) & 0x3F] +
+      '=='
+    )
+  } else if (extraBytes === 2) {
+    tmp = (uint8[len - 2] << 8) + uint8[len - 1]
+    parts.push(
+      lookup[tmp >> 10] +
+      lookup[(tmp >> 4) & 0x3F] +
+      lookup[(tmp << 2) & 0x3F] +
+      '='
+    )
+  }
+
+  return parts.join('')
+}
+
+
+/***/ }),
+
+/***/ 8287:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+/*!
+ * The buffer module from node.js, for the browser.
+ *
+ * @author   Feross Aboukhadijeh <https://feross.org>
+ * @license  MIT
+ */
+/* eslint-disable no-proto */
+
+
+
+const base64 = __webpack_require__(7526)
+const ieee754 = __webpack_require__(251)
+const customInspectSymbol =
+  (typeof Symbol === 'function' && typeof Symbol['for'] === 'function') // eslint-disable-line dot-notation
+    ? Symbol['for']('nodejs.util.inspect.custom') // eslint-disable-line dot-notation
+    : null
+
+exports.Buffer = Buffer
+exports.SlowBuffer = SlowBuffer
+exports.INSPECT_MAX_BYTES = 50
+
+const K_MAX_LENGTH = 0x7fffffff
+exports.kMaxLength = K_MAX_LENGTH
+
+/**
+ * If `Buffer.TYPED_ARRAY_SUPPORT`:
+ *   === true    Use Uint8Array implementation (fastest)
+ *   === false   Print warning and recommend using `buffer` v4.x which has an Object
+ *               implementation (most compatible, even IE6)
+ *
+ * Browsers that support typed arrays are IE 10+, Firefox 4+, Chrome 7+, Safari 5.1+,
+ * Opera 11.6+, iOS 4.2+.
+ *
+ * We report that the browser does not support typed arrays if the are not subclassable
+ * using __proto__. Firefox 4-29 lacks support for adding new properties to `Uint8Array`
+ * (See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438). IE 10 lacks support
+ * for __proto__ and has a buggy typed array implementation.
+ */
+Buffer.TYPED_ARRAY_SUPPORT = typedArraySupport()
+
+if (!Buffer.TYPED_ARRAY_SUPPORT && typeof console !== 'undefined' &&
+    typeof console.error === 'function') {
+  console.error(
+    'This browser lacks typed array (Uint8Array) support which is required by ' +
+    '`buffer` v5.x. Use `buffer` v4.x if you require old browser support.'
+  )
+}
+
+function typedArraySupport () {
+  // Can typed array instances can be augmented?
+  try {
+    const arr = new Uint8Array(1)
+    const proto = { foo: function () { return 42 } }
+    Object.setPrototypeOf(proto, Uint8Array.prototype)
+    Object.setPrototypeOf(arr, proto)
+    return arr.foo() === 42
+  } catch (e) {
+    return false
+  }
+}
+
+Object.defineProperty(Buffer.prototype, 'parent', {
+  enumerable: true,
+  get: function () {
+    if (!Buffer.isBuffer(this)) return undefined
+    return this.buffer
+  }
+})
+
+Object.defineProperty(Buffer.prototype, 'offset', {
+  enumerable: true,
+  get: function () {
+    if (!Buffer.isBuffer(this)) return undefined
+    return this.byteOffset
+  }
+})
+
+function createBuffer (length) {
+  if (length > K_MAX_LENGTH) {
+    throw new RangeError('The value "' + length + '" is invalid for option "size"')
+  }
+  // Return an augmented `Uint8Array` instance
+  const buf = new Uint8Array(length)
+  Object.setPrototypeOf(buf, Buffer.prototype)
+  return buf
+}
+
+/**
+ * The Buffer constructor returns instances of `Uint8Array` that have their
+ * prototype changed to `Buffer.prototype`. Furthermore, `Buffer` is a subclass of
+ * `Uint8Array`, so the returned instances will have all the node `Buffer` methods
+ * and the `Uint8Array` methods. Square bracket notation works as expected -- it
+ * returns a single octet.
+ *
+ * The `Uint8Array` prototype remains unmodified.
+ */
+
+function Buffer (arg, encodingOrOffset, length) {
+  // Common case.
+  if (typeof arg === 'number') {
+    if (typeof encodingOrOffset === 'string') {
+      throw new TypeError(
+        'The "string" argument must be of type string. Received type number'
+      )
+    }
+    return allocUnsafe(arg)
+  }
+  return from(arg, encodingOrOffset, length)
+}
+
+Buffer.poolSize = 8192 // not used by this implementation
+
+function from (value, encodingOrOffset, length) {
+  if (typeof value === 'string') {
+    return fromString(value, encodingOrOffset)
+  }
+
+  if (ArrayBuffer.isView(value)) {
+    return fromArrayView(value)
+  }
+
+  if (value == null) {
+    throw new TypeError(
+      'The first argument must be one of type string, Buffer, ArrayBuffer, Array, ' +
+      'or Array-like Object. Received type ' + (typeof value)
+    )
+  }
+
+  if (isInstance(value, ArrayBuffer) ||
+      (value && isInstance(value.buffer, ArrayBuffer))) {
+    return fromArrayBuffer(value, encodingOrOffset, length)
+  }
+
+  if (typeof SharedArrayBuffer !== 'undefined' &&
+      (isInstance(value, SharedArrayBuffer) ||
+      (value && isInstance(value.buffer, SharedArrayBuffer)))) {
+    return fromArrayBuffer(value, encodingOrOffset, length)
+  }
+
+  if (typeof value === 'number') {
+    throw new TypeError(
+      'The "value" argument must not be of type number. Received type number'
+    )
+  }
+
+  const valueOf = value.valueOf && value.valueOf()
+  if (valueOf != null && valueOf !== value) {
+    return Buffer.from(valueOf, encodingOrOffset, length)
+  }
+
+  const b = fromObject(value)
+  if (b) return b
+
+  if (typeof Symbol !== 'undefined' && Symbol.toPrimitive != null &&
+      typeof value[Symbol.toPrimitive] === 'function') {
+    return Buffer.from(value[Symbol.toPrimitive]('string'), encodingOrOffset, length)
+  }
+
+  throw new TypeError(
+    'The first argument must be one of type string, Buffer, ArrayBuffer, Array, ' +
+    'or Array-like Object. Received type ' + (typeof value)
+  )
+}
+
+/**
+ * Functionally equivalent to Buffer(arg, encoding) but throws a TypeError
+ * if value is a number.
+ * Buffer.from(str[, encoding])
+ * Buffer.from(array)
+ * Buffer.from(buffer)
+ * Buffer.from(arrayBuffer[, byteOffset[, length]])
+ **/
+Buffer.from = function (value, encodingOrOffset, length) {
+  return from(value, encodingOrOffset, length)
+}
+
+// Note: Change prototype *after* Buffer.from is defined to workaround Chrome bug:
+// https://github.com/feross/buffer/pull/148
+Object.setPrototypeOf(Buffer.prototype, Uint8Array.prototype)
+Object.setPrototypeOf(Buffer, Uint8Array)
+
+function assertSize (size) {
+  if (typeof size !== 'number') {
+    throw new TypeError('"size" argument must be of type number')
+  } else if (size < 0) {
+    throw new RangeError('The value "' + size + '" is invalid for option "size"')
+  }
+}
+
+function alloc (size, fill, encoding) {
+  assertSize(size)
+  if (size <= 0) {
+    return createBuffer(size)
+  }
+  if (fill !== undefined) {
+    // Only pay attention to encoding if it's a string. This
+    // prevents accidentally sending in a number that would
+    // be interpreted as a start offset.
+    return typeof encoding === 'string'
+      ? createBuffer(size).fill(fill, encoding)
+      : createBuffer(size).fill(fill)
+  }
+  return createBuffer(size)
+}
+
+/**
+ * Creates a new filled Buffer instance.
+ * alloc(size[, fill[, encoding]])
+ **/
+Buffer.alloc = function (size, fill, encoding) {
+  return alloc(size, fill, encoding)
+}
+
+function allocUnsafe (size) {
+  assertSize(size)
+  return createBuffer(size < 0 ? 0 : checked(size) | 0)
+}
+
+/**
+ * Equivalent to Buffer(num), by default creates a non-zero-filled Buffer instance.
+ * */
+Buffer.allocUnsafe = function (size) {
+  return allocUnsafe(size)
+}
+/**
+ * Equivalent to SlowBuffer(num), by default creates a non-zero-filled Buffer instance.
+ */
+Buffer.allocUnsafeSlow = function (size) {
+  return allocUnsafe(size)
+}
+
+function fromString (string, encoding) {
+  if (typeof encoding !== 'string' || encoding === '') {
+    encoding = 'utf8'
+  }
+
+  if (!Buffer.isEncoding(encoding)) {
+    throw new TypeError('Unknown encoding: ' + encoding)
+  }
+
+  const length = byteLength(string, encoding) | 0
+  let buf = createBuffer(length)
+
+  const actual = buf.write(string, encoding)
+
+  if (actual !== length) {
+    // Writing a hex string, for example, that contains invalid characters will
+    // cause everything after the first invalid character to be ignored. (e.g.
+    // 'abxxcd' will be treated as 'ab')
+    buf = buf.slice(0, actual)
+  }
+
+  return buf
+}
+
+function fromArrayLike (array) {
+  const length = array.length < 0 ? 0 : checked(array.length) | 0
+  const buf = createBuffer(length)
+  for (let i = 0; i < length; i += 1) {
+    buf[i] = array[i] & 255
+  }
+  return buf
+}
+
+function fromArrayView (arrayView) {
+  if (isInstance(arrayView, Uint8Array)) {
+    const copy = new Uint8Array(arrayView)
+    return fromArrayBuffer(copy.buffer, copy.byteOffset, copy.byteLength)
+  }
+  return fromArrayLike(arrayView)
+}
+
+function fromArrayBuffer (array, byteOffset, length) {
+  if (byteOffset < 0 || array.byteLength < byteOffset) {
+    throw new RangeError('"offset" is outside of buffer bounds')
+  }
+
+  if (array.byteLength < byteOffset + (length || 0)) {
+    throw new RangeError('"length" is outside of buffer bounds')
+  }
+
+  let buf
+  if (byteOffset === undefined && length === undefined) {
+    buf = new Uint8Array(array)
+  } else if (length === undefined) {
+    buf = new Uint8Array(array, byteOffset)
+  } else {
+    buf = new Uint8Array(array, byteOffset, length)
+  }
+
+  // Return an augmented `Uint8Array` instance
+  Object.setPrototypeOf(buf, Buffer.prototype)
+
+  return buf
+}
+
+function fromObject (obj) {
+  if (Buffer.isBuffer(obj)) {
+    const len = checked(obj.length) | 0
+    const buf = createBuffer(len)
+
+    if (buf.length === 0) {
+      return buf
+    }
+
+    obj.copy(buf, 0, 0, len)
+    return buf
+  }
+
+  if (obj.length !== undefined) {
+    if (typeof obj.length !== 'number' || numberIsNaN(obj.length)) {
+      return createBuffer(0)
+    }
+    return fromArrayLike(obj)
+  }
+
+  if (obj.type === 'Buffer' && Array.isArray(obj.data)) {
+    return fromArrayLike(obj.data)
+  }
+}
+
+function checked (length) {
+  // Note: cannot use `length < K_MAX_LENGTH` here because that fails when
+  // length is NaN (which is otherwise coerced to zero.)
+  if (length >= K_MAX_LENGTH) {
+    throw new RangeError('Attempt to allocate Buffer larger than maximum ' +
+                         'size: 0x' + K_MAX_LENGTH.toString(16) + ' bytes')
+  }
+  return length | 0
+}
+
+function SlowBuffer (length) {
+  if (+length != length) { // eslint-disable-line eqeqeq
+    length = 0
+  }
+  return Buffer.alloc(+length)
+}
+
+Buffer.isBuffer = function isBuffer (b) {
+  return b != null && b._isBuffer === true &&
+    b !== Buffer.prototype // so Buffer.isBuffer(Buffer.prototype) will be false
+}
+
+Buffer.compare = function compare (a, b) {
+  if (isInstance(a, Uint8Array)) a = Buffer.from(a, a.offset, a.byteLength)
+  if (isInstance(b, Uint8Array)) b = Buffer.from(b, b.offset, b.byteLength)
+  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
+    throw new TypeError(
+      'The "buf1", "buf2" arguments must be one of type Buffer or Uint8Array'
+    )
+  }
+
+  if (a === b) return 0
+
+  let x = a.length
+  let y = b.length
+
+  for (let i = 0, len = Math.min(x, y); i < len; ++i) {
+    if (a[i] !== b[i]) {
+      x = a[i]
+      y = b[i]
+      break
+    }
+  }
+
+  if (x < y) return -1
+  if (y < x) return 1
+  return 0
+}
+
+Buffer.isEncoding = function isEncoding (encoding) {
+  switch (String(encoding).toLowerCase()) {
+    case 'hex':
+    case 'utf8':
+    case 'utf-8':
+    case 'ascii':
+    case 'latin1':
+    case 'binary':
+    case 'base64':
+    case 'ucs2':
+    case 'ucs-2':
+    case 'utf16le':
+    case 'utf-16le':
+      return true
+    default:
+      return false
+  }
+}
+
+Buffer.concat = function concat (list, length) {
+  if (!Array.isArray(list)) {
+    throw new TypeError('"list" argument must be an Array of Buffers')
+  }
+
+  if (list.length === 0) {
+    return Buffer.alloc(0)
+  }
+
+  let i
+  if (length === undefined) {
+    length = 0
+    for (i = 0; i < list.length; ++i) {
+      length += list[i].length
+    }
+  }
+
+  const buffer = Buffer.allocUnsafe(length)
+  let pos = 0
+  for (i = 0; i < list.length; ++i) {
+    let buf = list[i]
+    if (isInstance(buf, Uint8Array)) {
+      if (pos + buf.length > buffer.length) {
+        if (!Buffer.isBuffer(buf)) buf = Buffer.from(buf)
+        buf.copy(buffer, pos)
+      } else {
+        Uint8Array.prototype.set.call(
+          buffer,
+          buf,
+          pos
+        )
+      }
+    } else if (!Buffer.isBuffer(buf)) {
+      throw new TypeError('"list" argument must be an Array of Buffers')
+    } else {
+      buf.copy(buffer, pos)
+    }
+    pos += buf.length
+  }
+  return buffer
+}
+
+function byteLength (string, encoding) {
+  if (Buffer.isBuffer(string)) {
+    return string.length
+  }
+  if (ArrayBuffer.isView(string) || isInstance(string, ArrayBuffer)) {
+    return string.byteLength
+  }
+  if (typeof string !== 'string') {
+    throw new TypeError(
+      'The "string" argument must be one of type string, Buffer, or ArrayBuffer. ' +
+      'Received type ' + typeof string
+    )
+  }
+
+  const len = string.length
+  const mustMatch = (arguments.length > 2 && arguments[2] === true)
+  if (!mustMatch && len === 0) return 0
+
+  // Use a for loop to avoid recursion
+  let loweredCase = false
+  for (;;) {
+    switch (encoding) {
+      case 'ascii':
+      case 'latin1':
+      case 'binary':
+        return len
+      case 'utf8':
+      case 'utf-8':
+        return utf8ToBytes(string).length
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return len * 2
+      case 'hex':
+        return len >>> 1
+      case 'base64':
+        return base64ToBytes(string).length
+      default:
+        if (loweredCase) {
+          return mustMatch ? -1 : utf8ToBytes(string).length // assume utf8
+        }
+        encoding = ('' + encoding).toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+Buffer.byteLength = byteLength
+
+function slowToString (encoding, start, end) {
+  let loweredCase = false
+
+  // No need to verify that "this.length <= MAX_UINT32" since it's a read-only
+  // property of a typed array.
+
+  // This behaves neither like String nor Uint8Array in that we set start/end
+  // to their upper/lower bounds if the value passed is out of range.
+  // undefined is handled specially as per ECMA-262 6th Edition,
+  // Section 13.3.3.7 Runtime Semantics: KeyedBindingInitialization.
+  if (start === undefined || start < 0) {
+    start = 0
+  }
+  // Return early if start > this.length. Done here to prevent potential uint32
+  // coercion fail below.
+  if (start > this.length) {
+    return ''
+  }
+
+  if (end === undefined || end > this.length) {
+    end = this.length
+  }
+
+  if (end <= 0) {
+    return ''
+  }
+
+  // Force coercion to uint32. This will also coerce falsey/NaN values to 0.
+  end >>>= 0
+  start >>>= 0
+
+  if (end <= start) {
+    return ''
+  }
+
+  if (!encoding) encoding = 'utf8'
+
+  while (true) {
+    switch (encoding) {
+      case 'hex':
+        return hexSlice(this, start, end)
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Slice(this, start, end)
+
+      case 'ascii':
+        return asciiSlice(this, start, end)
+
+      case 'latin1':
+      case 'binary':
+        return latin1Slice(this, start, end)
+
+      case 'base64':
+        return base64Slice(this, start, end)
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return utf16leSlice(this, start, end)
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = (encoding + '').toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+
+// This property is used by `Buffer.isBuffer` (and the `is-buffer` npm package)
+// to detect a Buffer instance. It's not possible to use `instanceof Buffer`
+// reliably in a browserify context because there could be multiple different
+// copies of the 'buffer' package in use. This method works even for Buffer
+// instances that were created from another copy of the `buffer` package.
+// See: https://github.com/feross/buffer/issues/154
+Buffer.prototype._isBuffer = true
+
+function swap (b, n, m) {
+  const i = b[n]
+  b[n] = b[m]
+  b[m] = i
+}
+
+Buffer.prototype.swap16 = function swap16 () {
+  const len = this.length
+  if (len % 2 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 16-bits')
+  }
+  for (let i = 0; i < len; i += 2) {
+    swap(this, i, i + 1)
+  }
+  return this
+}
+
+Buffer.prototype.swap32 = function swap32 () {
+  const len = this.length
+  if (len % 4 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 32-bits')
+  }
+  for (let i = 0; i < len; i += 4) {
+    swap(this, i, i + 3)
+    swap(this, i + 1, i + 2)
+  }
+  return this
+}
+
+Buffer.prototype.swap64 = function swap64 () {
+  const len = this.length
+  if (len % 8 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 64-bits')
+  }
+  for (let i = 0; i < len; i += 8) {
+    swap(this, i, i + 7)
+    swap(this, i + 1, i + 6)
+    swap(this, i + 2, i + 5)
+    swap(this, i + 3, i + 4)
+  }
+  return this
+}
+
+Buffer.prototype.toString = function toString () {
+  const length = this.length
+  if (length === 0) return ''
+  if (arguments.length === 0) return utf8Slice(this, 0, length)
+  return slowToString.apply(this, arguments)
+}
+
+Buffer.prototype.toLocaleString = Buffer.prototype.toString
+
+Buffer.prototype.equals = function equals (b) {
+  if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
+  if (this === b) return true
+  return Buffer.compare(this, b) === 0
+}
+
+Buffer.prototype.inspect = function inspect () {
+  let str = ''
+  const max = exports.INSPECT_MAX_BYTES
+  str = this.toString('hex', 0, max).replace(/(.{2})/g, '$1 ').trim()
+  if (this.length > max) str += ' ... '
+  return '<Buffer ' + str + '>'
+}
+if (customInspectSymbol) {
+  Buffer.prototype[customInspectSymbol] = Buffer.prototype.inspect
+}
+
+Buffer.prototype.compare = function compare (target, start, end, thisStart, thisEnd) {
+  if (isInstance(target, Uint8Array)) {
+    target = Buffer.from(target, target.offset, target.byteLength)
+  }
+  if (!Buffer.isBuffer(target)) {
+    throw new TypeError(
+      'The "target" argument must be one of type Buffer or Uint8Array. ' +
+      'Received type ' + (typeof target)
+    )
+  }
+
+  if (start === undefined) {
+    start = 0
+  }
+  if (end === undefined) {
+    end = target ? target.length : 0
+  }
+  if (thisStart === undefined) {
+    thisStart = 0
+  }
+  if (thisEnd === undefined) {
+    thisEnd = this.length
+  }
+
+  if (start < 0 || end > target.length || thisStart < 0 || thisEnd > this.length) {
+    throw new RangeError('out of range index')
+  }
+
+  if (thisStart >= thisEnd && start >= end) {
+    return 0
+  }
+  if (thisStart >= thisEnd) {
+    return -1
+  }
+  if (start >= end) {
+    return 1
+  }
+
+  start >>>= 0
+  end >>>= 0
+  thisStart >>>= 0
+  thisEnd >>>= 0
+
+  if (this === target) return 0
+
+  let x = thisEnd - thisStart
+  let y = end - start
+  const len = Math.min(x, y)
+
+  const thisCopy = this.slice(thisStart, thisEnd)
+  const targetCopy = target.slice(start, end)
+
+  for (let i = 0; i < len; ++i) {
+    if (thisCopy[i] !== targetCopy[i]) {
+      x = thisCopy[i]
+      y = targetCopy[i]
+      break
+    }
+  }
+
+  if (x < y) return -1
+  if (y < x) return 1
+  return 0
+}
+
+// Finds either the first index of `val` in `buffer` at offset >= `byteOffset`,
+// OR the last index of `val` in `buffer` at offset <= `byteOffset`.
+//
+// Arguments:
+// - buffer - a Buffer to search
+// - val - a string, Buffer, or number
+// - byteOffset - an index into `buffer`; will be clamped to an int32
+// - encoding - an optional encoding, relevant is val is a string
+// - dir - true for indexOf, false for lastIndexOf
+function bidirectionalIndexOf (buffer, val, byteOffset, encoding, dir) {
+  // Empty buffer means no match
+  if (buffer.length === 0) return -1
+
+  // Normalize byteOffset
+  if (typeof byteOffset === 'string') {
+    encoding = byteOffset
+    byteOffset = 0
+  } else if (byteOffset > 0x7fffffff) {
+    byteOffset = 0x7fffffff
+  } else if (byteOffset < -0x80000000) {
+    byteOffset = -0x80000000
+  }
+  byteOffset = +byteOffset // Coerce to Number.
+  if (numberIsNaN(byteOffset)) {
+    // byteOffset: it it's undefined, null, NaN, "foo", etc, search whole buffer
+    byteOffset = dir ? 0 : (buffer.length - 1)
+  }
+
+  // Normalize byteOffset: negative offsets start from the end of the buffer
+  if (byteOffset < 0) byteOffset = buffer.length + byteOffset
+  if (byteOffset >= buffer.length) {
+    if (dir) return -1
+    else byteOffset = buffer.length - 1
+  } else if (byteOffset < 0) {
+    if (dir) byteOffset = 0
+    else return -1
+  }
+
+  // Normalize val
+  if (typeof val === 'string') {
+    val = Buffer.from(val, encoding)
+  }
+
+  // Finally, search either indexOf (if dir is true) or lastIndexOf
+  if (Buffer.isBuffer(val)) {
+    // Special case: looking for empty string/buffer always fails
+    if (val.length === 0) {
+      return -1
+    }
+    return arrayIndexOf(buffer, val, byteOffset, encoding, dir)
+  } else if (typeof val === 'number') {
+    val = val & 0xFF // Search for a byte value [0-255]
+    if (typeof Uint8Array.prototype.indexOf === 'function') {
+      if (dir) {
+        return Uint8Array.prototype.indexOf.call(buffer, val, byteOffset)
+      } else {
+        return Uint8Array.prototype.lastIndexOf.call(buffer, val, byteOffset)
+      }
+    }
+    return arrayIndexOf(buffer, [val], byteOffset, encoding, dir)
+  }
+
+  throw new TypeError('val must be string, number or Buffer')
+}
+
+function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
+  let indexSize = 1
+  let arrLength = arr.length
+  let valLength = val.length
+
+  if (encoding !== undefined) {
+    encoding = String(encoding).toLowerCase()
+    if (encoding === 'ucs2' || encoding === 'ucs-2' ||
+        encoding === 'utf16le' || encoding === 'utf-16le') {
+      if (arr.length < 2 || val.length < 2) {
+        return -1
+      }
+      indexSize = 2
+      arrLength /= 2
+      valLength /= 2
+      byteOffset /= 2
+    }
+  }
+
+  function read (buf, i) {
+    if (indexSize === 1) {
+      return buf[i]
+    } else {
+      return buf.readUInt16BE(i * indexSize)
+    }
+  }
+
+  let i
+  if (dir) {
+    let foundIndex = -1
+    for (i = byteOffset; i < arrLength; i++) {
+      if (read(arr, i) === read(val, foundIndex === -1 ? 0 : i - foundIndex)) {
+        if (foundIndex === -1) foundIndex = i
+        if (i - foundIndex + 1 === valLength) return foundIndex * indexSize
+      } else {
+        if (foundIndex !== -1) i -= i - foundIndex
+        foundIndex = -1
+      }
+    }
+  } else {
+    if (byteOffset + valLength > arrLength) byteOffset = arrLength - valLength
+    for (i = byteOffset; i >= 0; i--) {
+      let found = true
+      for (let j = 0; j < valLength; j++) {
+        if (read(arr, i + j) !== read(val, j)) {
+          found = false
+          break
+        }
+      }
+      if (found) return i
+    }
+  }
+
+  return -1
+}
+
+Buffer.prototype.includes = function includes (val, byteOffset, encoding) {
+  return this.indexOf(val, byteOffset, encoding) !== -1
+}
+
+Buffer.prototype.indexOf = function indexOf (val, byteOffset, encoding) {
+  return bidirectionalIndexOf(this, val, byteOffset, encoding, true)
+}
+
+Buffer.prototype.lastIndexOf = function lastIndexOf (val, byteOffset, encoding) {
+  return bidirectionalIndexOf(this, val, byteOffset, encoding, false)
+}
+
+function hexWrite (buf, string, offset, length) {
+  offset = Number(offset) || 0
+  const remaining = buf.length - offset
+  if (!length) {
+    length = remaining
+  } else {
+    length = Number(length)
+    if (length > remaining) {
+      length = remaining
+    }
+  }
+
+  const strLen = string.length
+
+  if (length > strLen / 2) {
+    length = strLen / 2
+  }
+  let i
+  for (i = 0; i < length; ++i) {
+    const parsed = parseInt(string.substr(i * 2, 2), 16)
+    if (numberIsNaN(parsed)) return i
+    buf[offset + i] = parsed
+  }
+  return i
+}
+
+function utf8Write (buf, string, offset, length) {
+  return blitBuffer(utf8ToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+function asciiWrite (buf, string, offset, length) {
+  return blitBuffer(asciiToBytes(string), buf, offset, length)
+}
+
+function base64Write (buf, string, offset, length) {
+  return blitBuffer(base64ToBytes(string), buf, offset, length)
+}
+
+function ucs2Write (buf, string, offset, length) {
+  return blitBuffer(utf16leToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+Buffer.prototype.write = function write (string, offset, length, encoding) {
+  // Buffer#write(string)
+  if (offset === undefined) {
+    encoding = 'utf8'
+    length = this.length
+    offset = 0
+  // Buffer#write(string, encoding)
+  } else if (length === undefined && typeof offset === 'string') {
+    encoding = offset
+    length = this.length
+    offset = 0
+  // Buffer#write(string, offset[, length][, encoding])
+  } else if (isFinite(offset)) {
+    offset = offset >>> 0
+    if (isFinite(length)) {
+      length = length >>> 0
+      if (encoding === undefined) encoding = 'utf8'
+    } else {
+      encoding = length
+      length = undefined
+    }
+  } else {
+    throw new Error(
+      'Buffer.write(string, encoding, offset[, length]) is no longer supported'
+    )
+  }
+
+  const remaining = this.length - offset
+  if (length === undefined || length > remaining) length = remaining
+
+  if ((string.length > 0 && (length < 0 || offset < 0)) || offset > this.length) {
+    throw new RangeError('Attempt to write outside buffer bounds')
+  }
+
+  if (!encoding) encoding = 'utf8'
+
+  let loweredCase = false
+  for (;;) {
+    switch (encoding) {
+      case 'hex':
+        return hexWrite(this, string, offset, length)
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Write(this, string, offset, length)
+
+      case 'ascii':
+      case 'latin1':
+      case 'binary':
+        return asciiWrite(this, string, offset, length)
+
+      case 'base64':
+        // Warning: maxLength not taken into account in base64Write
+        return base64Write(this, string, offset, length)
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return ucs2Write(this, string, offset, length)
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = ('' + encoding).toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+
+Buffer.prototype.toJSON = function toJSON () {
+  return {
+    type: 'Buffer',
+    data: Array.prototype.slice.call(this._arr || this, 0)
+  }
+}
+
+function base64Slice (buf, start, end) {
+  if (start === 0 && end === buf.length) {
+    return base64.fromByteArray(buf)
+  } else {
+    return base64.fromByteArray(buf.slice(start, end))
+  }
+}
+
+function utf8Slice (buf, start, end) {
+  end = Math.min(buf.length, end)
+  const res = []
+
+  let i = start
+  while (i < end) {
+    const firstByte = buf[i]
+    let codePoint = null
+    let bytesPerSequence = (firstByte > 0xEF)
+      ? 4
+      : (firstByte > 0xDF)
+          ? 3
+          : (firstByte > 0xBF)
+              ? 2
+              : 1
+
+    if (i + bytesPerSequence <= end) {
+      let secondByte, thirdByte, fourthByte, tempCodePoint
+
+      switch (bytesPerSequence) {
+        case 1:
+          if (firstByte < 0x80) {
+            codePoint = firstByte
+          }
+          break
+        case 2:
+          secondByte = buf[i + 1]
+          if ((secondByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0x1F) << 0x6 | (secondByte & 0x3F)
+            if (tempCodePoint > 0x7F) {
+              codePoint = tempCodePoint
+            }
+          }
+          break
+        case 3:
+          secondByte = buf[i + 1]
+          thirdByte = buf[i + 2]
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0xC | (secondByte & 0x3F) << 0x6 | (thirdByte & 0x3F)
+            if (tempCodePoint > 0x7FF && (tempCodePoint < 0xD800 || tempCodePoint > 0xDFFF)) {
+              codePoint = tempCodePoint
+            }
+          }
+          break
+        case 4:
+          secondByte = buf[i + 1]
+          thirdByte = buf[i + 2]
+          fourthByte = buf[i + 3]
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80 && (fourthByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0x12 | (secondByte & 0x3F) << 0xC | (thirdByte & 0x3F) << 0x6 | (fourthByte & 0x3F)
+            if (tempCodePoint > 0xFFFF && tempCodePoint < 0x110000) {
+              codePoint = tempCodePoint
+            }
+          }
+      }
+    }
+
+    if (codePoint === null) {
+      // we did not generate a valid codePoint so insert a
+      // replacement char (U+FFFD) and advance only 1 byte
+      codePoint = 0xFFFD
+      bytesPerSequence = 1
+    } else if (codePoint > 0xFFFF) {
+      // encode to utf16 (surrogate pair dance)
+      codePoint -= 0x10000
+      res.push(codePoint >>> 10 & 0x3FF | 0xD800)
+      codePoint = 0xDC00 | codePoint & 0x3FF
+    }
+
+    res.push(codePoint)
+    i += bytesPerSequence
+  }
+
+  return decodeCodePointsArray(res)
+}
+
+// Based on http://stackoverflow.com/a/22747272/680742, the browser with
+// the lowest limit is Chrome, with 0x10000 args.
+// We go 1 magnitude less, for safety
+const MAX_ARGUMENTS_LENGTH = 0x1000
+
+function decodeCodePointsArray (codePoints) {
+  const len = codePoints.length
+  if (len <= MAX_ARGUMENTS_LENGTH) {
+    return String.fromCharCode.apply(String, codePoints) // avoid extra slice()
+  }
+
+  // Decode in chunks to avoid "call stack size exceeded".
+  let res = ''
+  let i = 0
+  while (i < len) {
+    res += String.fromCharCode.apply(
+      String,
+      codePoints.slice(i, i += MAX_ARGUMENTS_LENGTH)
+    )
+  }
+  return res
+}
+
+function asciiSlice (buf, start, end) {
+  let ret = ''
+  end = Math.min(buf.length, end)
+
+  for (let i = start; i < end; ++i) {
+    ret += String.fromCharCode(buf[i] & 0x7F)
+  }
+  return ret
+}
+
+function latin1Slice (buf, start, end) {
+  let ret = ''
+  end = Math.min(buf.length, end)
+
+  for (let i = start; i < end; ++i) {
+    ret += String.fromCharCode(buf[i])
+  }
+  return ret
+}
+
+function hexSlice (buf, start, end) {
+  const len = buf.length
+
+  if (!start || start < 0) start = 0
+  if (!end || end < 0 || end > len) end = len
+
+  let out = ''
+  for (let i = start; i < end; ++i) {
+    out += hexSliceLookupTable[buf[i]]
+  }
+  return out
+}
+
+function utf16leSlice (buf, start, end) {
+  const bytes = buf.slice(start, end)
+  let res = ''
+  // If bytes.length is odd, the last 8 bits must be ignored (same as node.js)
+  for (let i = 0; i < bytes.length - 1; i += 2) {
+    res += String.fromCharCode(bytes[i] + (bytes[i + 1] * 256))
+  }
+  return res
+}
+
+Buffer.prototype.slice = function slice (start, end) {
+  const len = this.length
+  start = ~~start
+  end = end === undefined ? len : ~~end
+
+  if (start < 0) {
+    start += len
+    if (start < 0) start = 0
+  } else if (start > len) {
+    start = len
+  }
+
+  if (end < 0) {
+    end += len
+    if (end < 0) end = 0
+  } else if (end > len) {
+    end = len
+  }
+
+  if (end < start) end = start
+
+  const newBuf = this.subarray(start, end)
+  // Return an augmented `Uint8Array` instance
+  Object.setPrototypeOf(newBuf, Buffer.prototype)
+
+  return newBuf
+}
+
+/*
+ * Need to make sure that buffer isn't trying to write out of bounds.
+ */
+function checkOffset (offset, ext, length) {
+  if ((offset % 1) !== 0 || offset < 0) throw new RangeError('offset is not uint')
+  if (offset + ext > length) throw new RangeError('Trying to access beyond buffer length')
+}
+
+Buffer.prototype.readUintLE =
+Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  let val = this[offset]
+  let mul = 1
+  let i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUintBE =
+Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) {
+    checkOffset(offset, byteLength, this.length)
+  }
+
+  let val = this[offset + --byteLength]
+  let mul = 1
+  while (byteLength > 0 && (mul *= 0x100)) {
+    val += this[offset + --byteLength] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUint8 =
+Buffer.prototype.readUInt8 = function readUInt8 (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  return this[offset]
+}
+
+Buffer.prototype.readUint16LE =
+Buffer.prototype.readUInt16LE = function readUInt16LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return this[offset] | (this[offset + 1] << 8)
+}
+
+Buffer.prototype.readUint16BE =
+Buffer.prototype.readUInt16BE = function readUInt16BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return (this[offset] << 8) | this[offset + 1]
+}
+
+Buffer.prototype.readUint32LE =
+Buffer.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return ((this[offset]) |
+      (this[offset + 1] << 8) |
+      (this[offset + 2] << 16)) +
+      (this[offset + 3] * 0x1000000)
+}
+
+Buffer.prototype.readUint32BE =
+Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] * 0x1000000) +
+    ((this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    this[offset + 3])
+}
+
+Buffer.prototype.readBigUInt64LE = defineBigIntMethod(function readBigUInt64LE (offset) {
+  offset = offset >>> 0
+  validateNumber(offset, 'offset')
+  const first = this[offset]
+  const last = this[offset + 7]
+  if (first === undefined || last === undefined) {
+    boundsError(offset, this.length - 8)
+  }
+
+  const lo = first +
+    this[++offset] * 2 ** 8 +
+    this[++offset] * 2 ** 16 +
+    this[++offset] * 2 ** 24
+
+  const hi = this[++offset] +
+    this[++offset] * 2 ** 8 +
+    this[++offset] * 2 ** 16 +
+    last * 2 ** 24
+
+  return BigInt(lo) + (BigInt(hi) << BigInt(32))
+})
+
+Buffer.prototype.readBigUInt64BE = defineBigIntMethod(function readBigUInt64BE (offset) {
+  offset = offset >>> 0
+  validateNumber(offset, 'offset')
+  const first = this[offset]
+  const last = this[offset + 7]
+  if (first === undefined || last === undefined) {
+    boundsError(offset, this.length - 8)
+  }
+
+  const hi = first * 2 ** 24 +
+    this[++offset] * 2 ** 16 +
+    this[++offset] * 2 ** 8 +
+    this[++offset]
+
+  const lo = this[++offset] * 2 ** 24 +
+    this[++offset] * 2 ** 16 +
+    this[++offset] * 2 ** 8 +
+    last
+
+  return (BigInt(hi) << BigInt(32)) + BigInt(lo)
+})
+
+Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  let val = this[offset]
+  let mul = 1
+  let i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  let i = byteLength
+  let mul = 1
+  let val = this[offset + --i]
+  while (i > 0 && (mul *= 0x100)) {
+    val += this[offset + --i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readInt8 = function readInt8 (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  if (!(this[offset] & 0x80)) return (this[offset])
+  return ((0xff - this[offset] + 1) * -1)
+}
+
+Buffer.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  const val = this[offset] | (this[offset + 1] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  const val = this[offset + 1] | (this[offset] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset]) |
+    (this[offset + 1] << 8) |
+    (this[offset + 2] << 16) |
+    (this[offset + 3] << 24)
+}
+
+Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] << 24) |
+    (this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    (this[offset + 3])
+}
+
+Buffer.prototype.readBigInt64LE = defineBigIntMethod(function readBigInt64LE (offset) {
+  offset = offset >>> 0
+  validateNumber(offset, 'offset')
+  const first = this[offset]
+  const last = this[offset + 7]
+  if (first === undefined || last === undefined) {
+    boundsError(offset, this.length - 8)
+  }
+
+  const val = this[offset + 4] +
+    this[offset + 5] * 2 ** 8 +
+    this[offset + 6] * 2 ** 16 +
+    (last << 24) // Overflow
+
+  return (BigInt(val) << BigInt(32)) +
+    BigInt(first +
+    this[++offset] * 2 ** 8 +
+    this[++offset] * 2 ** 16 +
+    this[++offset] * 2 ** 24)
+})
+
+Buffer.prototype.readBigInt64BE = defineBigIntMethod(function readBigInt64BE (offset) {
+  offset = offset >>> 0
+  validateNumber(offset, 'offset')
+  const first = this[offset]
+  const last = this[offset + 7]
+  if (first === undefined || last === undefined) {
+    boundsError(offset, this.length - 8)
+  }
+
+  const val = (first << 24) + // Overflow
+    this[++offset] * 2 ** 16 +
+    this[++offset] * 2 ** 8 +
+    this[++offset]
+
+  return (BigInt(val) << BigInt(32)) +
+    BigInt(this[++offset] * 2 ** 24 +
+    this[++offset] * 2 ** 16 +
+    this[++offset] * 2 ** 8 +
+    last)
+})
+
+Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, true, 23, 4)
+}
+
+Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, false, 23, 4)
+}
+
+Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, true, 52, 8)
+}
+
+Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, false, 52, 8)
+}
+
+function checkInt (buf, value, offset, ext, max, min) {
+  if (!Buffer.isBuffer(buf)) throw new TypeError('"buffer" argument must be a Buffer instance')
+  if (value > max || value < min) throw new RangeError('"value" argument is out of bounds')
+  if (offset + ext > buf.length) throw new RangeError('Index out of range')
+}
+
+Buffer.prototype.writeUintLE =
+Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) {
+    const maxBytes = Math.pow(2, 8 * byteLength) - 1
+    checkInt(this, value, offset, byteLength, maxBytes, 0)
+  }
+
+  let mul = 1
+  let i = 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUintBE =
+Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) {
+    const maxBytes = Math.pow(2, 8 * byteLength) - 1
+    checkInt(this, value, offset, byteLength, maxBytes, 0)
+  }
+
+  let i = byteLength - 1
+  let mul = 1
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUint8 =
+Buffer.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0xff, 0)
+  this[offset] = (value & 0xff)
+  return offset + 1
+}
+
+Buffer.prototype.writeUint16LE =
+Buffer.prototype.writeUInt16LE = function writeUInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  this[offset] = (value & 0xff)
+  this[offset + 1] = (value >>> 8)
+  return offset + 2
+}
+
+Buffer.prototype.writeUint16BE =
+Buffer.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  this[offset] = (value >>> 8)
+  this[offset + 1] = (value & 0xff)
+  return offset + 2
+}
+
+Buffer.prototype.writeUint32LE =
+Buffer.prototype.writeUInt32LE = function writeUInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  this[offset + 3] = (value >>> 24)
+  this[offset + 2] = (value >>> 16)
+  this[offset + 1] = (value >>> 8)
+  this[offset] = (value & 0xff)
+  return offset + 4
+}
+
+Buffer.prototype.writeUint32BE =
+Buffer.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  this[offset] = (value >>> 24)
+  this[offset + 1] = (value >>> 16)
+  this[offset + 2] = (value >>> 8)
+  this[offset + 3] = (value & 0xff)
+  return offset + 4
+}
+
+function wrtBigUInt64LE (buf, value, offset, min, max) {
+  checkIntBI(value, min, max, buf, offset, 7)
+
+  let lo = Number(value & BigInt(0xffffffff))
+  buf[offset++] = lo
+  lo = lo >> 8
+  buf[offset++] = lo
+  lo = lo >> 8
+  buf[offset++] = lo
+  lo = lo >> 8
+  buf[offset++] = lo
+  let hi = Number(value >> BigInt(32) & BigInt(0xffffffff))
+  buf[offset++] = hi
+  hi = hi >> 8
+  buf[offset++] = hi
+  hi = hi >> 8
+  buf[offset++] = hi
+  hi = hi >> 8
+  buf[offset++] = hi
+  return offset
+}
+
+function wrtBigUInt64BE (buf, value, offset, min, max) {
+  checkIntBI(value, min, max, buf, offset, 7)
+
+  let lo = Number(value & BigInt(0xffffffff))
+  buf[offset + 7] = lo
+  lo = lo >> 8
+  buf[offset + 6] = lo
+  lo = lo >> 8
+  buf[offset + 5] = lo
+  lo = lo >> 8
+  buf[offset + 4] = lo
+  let hi = Number(value >> BigInt(32) & BigInt(0xffffffff))
+  buf[offset + 3] = hi
+  hi = hi >> 8
+  buf[offset + 2] = hi
+  hi = hi >> 8
+  buf[offset + 1] = hi
+  hi = hi >> 8
+  buf[offset] = hi
+  return offset + 8
+}
+
+Buffer.prototype.writeBigUInt64LE = defineBigIntMethod(function writeBigUInt64LE (value, offset = 0) {
+  return wrtBigUInt64LE(this, value, offset, BigInt(0), BigInt('0xffffffffffffffff'))
+})
+
+Buffer.prototype.writeBigUInt64BE = defineBigIntMethod(function writeBigUInt64BE (value, offset = 0) {
+  return wrtBigUInt64BE(this, value, offset, BigInt(0), BigInt('0xffffffffffffffff'))
+})
+
+Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    const limit = Math.pow(2, (8 * byteLength) - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  let i = 0
+  let mul = 1
+  let sub = 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    if (value < 0 && sub === 0 && this[offset + i - 1] !== 0) {
+      sub = 1
+    }
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    const limit = Math.pow(2, (8 * byteLength) - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  let i = byteLength - 1
+  let mul = 1
+  let sub = 0
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    if (value < 0 && sub === 0 && this[offset + i + 1] !== 0) {
+      sub = 1
+    }
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0x7f, -0x80)
+  if (value < 0) value = 0xff + value + 1
+  this[offset] = (value & 0xff)
+  return offset + 1
+}
+
+Buffer.prototype.writeInt16LE = function writeInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  this[offset] = (value & 0xff)
+  this[offset + 1] = (value >>> 8)
+  return offset + 2
+}
+
+Buffer.prototype.writeInt16BE = function writeInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  this[offset] = (value >>> 8)
+  this[offset + 1] = (value & 0xff)
+  return offset + 2
+}
+
+Buffer.prototype.writeInt32LE = function writeInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  this[offset] = (value & 0xff)
+  this[offset + 1] = (value >>> 8)
+  this[offset + 2] = (value >>> 16)
+  this[offset + 3] = (value >>> 24)
+  return offset + 4
+}
+
+Buffer.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  if (value < 0) value = 0xffffffff + value + 1
+  this[offset] = (value >>> 24)
+  this[offset + 1] = (value >>> 16)
+  this[offset + 2] = (value >>> 8)
+  this[offset + 3] = (value & 0xff)
+  return offset + 4
+}
+
+Buffer.prototype.writeBigInt64LE = defineBigIntMethod(function writeBigInt64LE (value, offset = 0) {
+  return wrtBigUInt64LE(this, value, offset, -BigInt('0x8000000000000000'), BigInt('0x7fffffffffffffff'))
+})
+
+Buffer.prototype.writeBigInt64BE = defineBigIntMethod(function writeBigInt64BE (value, offset = 0) {
+  return wrtBigUInt64BE(this, value, offset, -BigInt('0x8000000000000000'), BigInt('0x7fffffffffffffff'))
+})
+
+function checkIEEE754 (buf, value, offset, ext, max, min) {
+  if (offset + ext > buf.length) throw new RangeError('Index out of range')
+  if (offset < 0) throw new RangeError('Index out of range')
+}
+
+function writeFloat (buf, value, offset, littleEndian, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 4, 3.4028234663852886e+38, -3.4028234663852886e+38)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 23, 4)
+  return offset + 4
+}
+
+Buffer.prototype.writeFloatLE = function writeFloatLE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeFloatBE = function writeFloatBE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, false, noAssert)
+}
+
+function writeDouble (buf, value, offset, littleEndian, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 8, 1.7976931348623157E+308, -1.7976931348623157E+308)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 52, 8)
+  return offset + 8
+}
+
+Buffer.prototype.writeDoubleLE = function writeDoubleLE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeDoubleBE = function writeDoubleBE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, false, noAssert)
+}
+
+// copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
+Buffer.prototype.copy = function copy (target, targetStart, start, end) {
+  if (!Buffer.isBuffer(target)) throw new TypeError('argument should be a Buffer')
+  if (!start) start = 0
+  if (!end && end !== 0) end = this.length
+  if (targetStart >= target.length) targetStart = target.length
+  if (!targetStart) targetStart = 0
+  if (end > 0 && end < start) end = start
+
+  // Copy 0 bytes; we're done
+  if (end === start) return 0
+  if (target.length === 0 || this.length === 0) return 0
+
+  // Fatal error conditions
+  if (targetStart < 0) {
+    throw new RangeError('targetStart out of bounds')
+  }
+  if (start < 0 || start >= this.length) throw new RangeError('Index out of range')
+  if (end < 0) throw new RangeError('sourceEnd out of bounds')
+
+  // Are we oob?
+  if (end > this.length) end = this.length
+  if (target.length - targetStart < end - start) {
+    end = target.length - targetStart + start
+  }
+
+  const len = end - start
+
+  if (this === target && typeof Uint8Array.prototype.copyWithin === 'function') {
+    // Use built-in when available, missing from IE11
+    this.copyWithin(targetStart, start, end)
+  } else {
+    Uint8Array.prototype.set.call(
+      target,
+      this.subarray(start, end),
+      targetStart
+    )
+  }
+
+  return len
+}
+
+// Usage:
+//    buffer.fill(number[, offset[, end]])
+//    buffer.fill(buffer[, offset[, end]])
+//    buffer.fill(string[, offset[, end]][, encoding])
+Buffer.prototype.fill = function fill (val, start, end, encoding) {
+  // Handle string cases:
+  if (typeof val === 'string') {
+    if (typeof start === 'string') {
+      encoding = start
+      start = 0
+      end = this.length
+    } else if (typeof end === 'string') {
+      encoding = end
+      end = this.length
+    }
+    if (encoding !== undefined && typeof encoding !== 'string') {
+      throw new TypeError('encoding must be a string')
+    }
+    if (typeof encoding === 'string' && !Buffer.isEncoding(encoding)) {
+      throw new TypeError('Unknown encoding: ' + encoding)
+    }
+    if (val.length === 1) {
+      const code = val.charCodeAt(0)
+      if ((encoding === 'utf8' && code < 128) ||
+          encoding === 'latin1') {
+        // Fast path: If `val` fits into a single byte, use that numeric value.
+        val = code
+      }
+    }
+  } else if (typeof val === 'number') {
+    val = val & 255
+  } else if (typeof val === 'boolean') {
+    val = Number(val)
+  }
+
+  // Invalid ranges are not set to a default, so can range check early.
+  if (start < 0 || this.length < start || this.length < end) {
+    throw new RangeError('Out of range index')
+  }
+
+  if (end <= start) {
+    return this
+  }
+
+  start = start >>> 0
+  end = end === undefined ? this.length : end >>> 0
+
+  if (!val) val = 0
+
+  let i
+  if (typeof val === 'number') {
+    for (i = start; i < end; ++i) {
+      this[i] = val
+    }
+  } else {
+    const bytes = Buffer.isBuffer(val)
+      ? val
+      : Buffer.from(val, encoding)
+    const len = bytes.length
+    if (len === 0) {
+      throw new TypeError('The value "' + val +
+        '" is invalid for argument "value"')
+    }
+    for (i = 0; i < end - start; ++i) {
+      this[i + start] = bytes[i % len]
+    }
+  }
+
+  return this
+}
+
+// CUSTOM ERRORS
+// =============
+
+// Simplified versions from Node, changed for Buffer-only usage
+const errors = {}
+function E (sym, getMessage, Base) {
+  errors[sym] = class NodeError extends Base {
+    constructor () {
+      super()
+
+      Object.defineProperty(this, 'message', {
+        value: getMessage.apply(this, arguments),
+        writable: true,
+        configurable: true
+      })
+
+      // Add the error code to the name to include it in the stack trace.
+      this.name = `${this.name} [${sym}]`
+      // Access the stack to generate the error message including the error code
+      // from the name.
+      this.stack // eslint-disable-line no-unused-expressions
+      // Reset the name to the actual name.
+      delete this.name
+    }
+
+    get code () {
+      return sym
+    }
+
+    set code (value) {
+      Object.defineProperty(this, 'code', {
+        configurable: true,
+        enumerable: true,
+        value,
+        writable: true
+      })
+    }
+
+    toString () {
+      return `${this.name} [${sym}]: ${this.message}`
+    }
+  }
+}
+
+E('ERR_BUFFER_OUT_OF_BOUNDS',
+  function (name) {
+    if (name) {
+      return `${name} is outside of buffer bounds`
+    }
+
+    return 'Attempt to access memory outside buffer bounds'
+  }, RangeError)
+E('ERR_INVALID_ARG_TYPE',
+  function (name, actual) {
+    return `The "${name}" argument must be of type number. Received type ${typeof actual}`
+  }, TypeError)
+E('ERR_OUT_OF_RANGE',
+  function (str, range, input) {
+    let msg = `The value of "${str}" is out of range.`
+    let received = input
+    if (Number.isInteger(input) && Math.abs(input) > 2 ** 32) {
+      received = addNumericalSeparator(String(input))
+    } else if (typeof input === 'bigint') {
+      received = String(input)
+      if (input > BigInt(2) ** BigInt(32) || input < -(BigInt(2) ** BigInt(32))) {
+        received = addNumericalSeparator(received)
+      }
+      received += 'n'
+    }
+    msg += ` It must be ${range}. Received ${received}`
+    return msg
+  }, RangeError)
+
+function addNumericalSeparator (val) {
+  let res = ''
+  let i = val.length
+  const start = val[0] === '-' ? 1 : 0
+  for (; i >= start + 4; i -= 3) {
+    res = `_${val.slice(i - 3, i)}${res}`
+  }
+  return `${val.slice(0, i)}${res}`
+}
+
+// CHECK FUNCTIONS
+// ===============
+
+function checkBounds (buf, offset, byteLength) {
+  validateNumber(offset, 'offset')
+  if (buf[offset] === undefined || buf[offset + byteLength] === undefined) {
+    boundsError(offset, buf.length - (byteLength + 1))
+  }
+}
+
+function checkIntBI (value, min, max, buf, offset, byteLength) {
+  if (value > max || value < min) {
+    const n = typeof min === 'bigint' ? 'n' : ''
+    let range
+    if (byteLength > 3) {
+      if (min === 0 || min === BigInt(0)) {
+        range = `>= 0${n} and < 2${n} ** ${(byteLength + 1) * 8}${n}`
+      } else {
+        range = `>= -(2${n} ** ${(byteLength + 1) * 8 - 1}${n}) and < 2 ** ` +
+                `${(byteLength + 1) * 8 - 1}${n}`
+      }
+    } else {
+      range = `>= ${min}${n} and <= ${max}${n}`
+    }
+    throw new errors.ERR_OUT_OF_RANGE('value', range, value)
+  }
+  checkBounds(buf, offset, byteLength)
+}
+
+function validateNumber (value, name) {
+  if (typeof value !== 'number') {
+    throw new errors.ERR_INVALID_ARG_TYPE(name, 'number', value)
+  }
+}
+
+function boundsError (value, length, type) {
+  if (Math.floor(value) !== value) {
+    validateNumber(value, type)
+    throw new errors.ERR_OUT_OF_RANGE(type || 'offset', 'an integer', value)
+  }
+
+  if (length < 0) {
+    throw new errors.ERR_BUFFER_OUT_OF_BOUNDS()
+  }
+
+  throw new errors.ERR_OUT_OF_RANGE(type || 'offset',
+                                    `>= ${type ? 1 : 0} and <= ${length}`,
+                                    value)
+}
+
+// HELPER FUNCTIONS
+// ================
+
+const INVALID_BASE64_RE = /[^+/0-9A-Za-z-_]/g
+
+function base64clean (str) {
+  // Node takes equal signs as end of the Base64 encoding
+  str = str.split('=')[0]
+  // Node strips out invalid characters like \n and \t from the string, base64-js does not
+  str = str.trim().replace(INVALID_BASE64_RE, '')
+  // Node converts strings with length < 2 to ''
+  if (str.length < 2) return ''
+  // Node allows for non-padded base64 strings (missing trailing ===), base64-js does not
+  while (str.length % 4 !== 0) {
+    str = str + '='
+  }
+  return str
+}
+
+function utf8ToBytes (string, units) {
+  units = units || Infinity
+  let codePoint
+  const length = string.length
+  let leadSurrogate = null
+  const bytes = []
+
+  for (let i = 0; i < length; ++i) {
+    codePoint = string.charCodeAt(i)
+
+    // is surrogate component
+    if (codePoint > 0xD7FF && codePoint < 0xE000) {
+      // last char was a lead
+      if (!leadSurrogate) {
+        // no lead yet
+        if (codePoint > 0xDBFF) {
+          // unexpected trail
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        } else if (i + 1 === length) {
+          // unpaired lead
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        }
+
+        // valid lead
+        leadSurrogate = codePoint
+
+        continue
+      }
+
+      // 2 leads in a row
+      if (codePoint < 0xDC00) {
+        if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+        leadSurrogate = codePoint
+        continue
+      }
+
+      // valid surrogate pair
+      codePoint = (leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00) + 0x10000
+    } else if (leadSurrogate) {
+      // valid bmp char, but last char was a lead
+      if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+    }
+
+    leadSurrogate = null
+
+    // encode utf8
+    if (codePoint < 0x80) {
+      if ((units -= 1) < 0) break
+      bytes.push(codePoint)
+    } else if (codePoint < 0x800) {
+      if ((units -= 2) < 0) break
+      bytes.push(
+        codePoint >> 0x6 | 0xC0,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x10000) {
+      if ((units -= 3) < 0) break
+      bytes.push(
+        codePoint >> 0xC | 0xE0,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x110000) {
+      if ((units -= 4) < 0) break
+      bytes.push(
+        codePoint >> 0x12 | 0xF0,
+        codePoint >> 0xC & 0x3F | 0x80,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else {
+      throw new Error('Invalid code point')
+    }
+  }
+
+  return bytes
+}
+
+function asciiToBytes (str) {
+  const byteArray = []
+  for (let i = 0; i < str.length; ++i) {
+    // Node's code seems to be doing this and not & 0x7F..
+    byteArray.push(str.charCodeAt(i) & 0xFF)
+  }
+  return byteArray
+}
+
+function utf16leToBytes (str, units) {
+  let c, hi, lo
+  const byteArray = []
+  for (let i = 0; i < str.length; ++i) {
+    if ((units -= 2) < 0) break
+
+    c = str.charCodeAt(i)
+    hi = c >> 8
+    lo = c % 256
+    byteArray.push(lo)
+    byteArray.push(hi)
+  }
+
+  return byteArray
+}
+
+function base64ToBytes (str) {
+  return base64.toByteArray(base64clean(str))
+}
+
+function blitBuffer (src, dst, offset, length) {
+  let i
+  for (i = 0; i < length; ++i) {
+    if ((i + offset >= dst.length) || (i >= src.length)) break
+    dst[i + offset] = src[i]
+  }
+  return i
+}
+
+// ArrayBuffer or Uint8Array objects from other contexts (i.e. iframes) do not pass
+// the `instanceof` check but they should be treated as of that type.
+// See: https://github.com/feross/buffer/issues/166
+function isInstance (obj, type) {
+  return obj instanceof type ||
+    (obj != null && obj.constructor != null && obj.constructor.name != null &&
+      obj.constructor.name === type.name)
+}
+function numberIsNaN (obj) {
+  // For IE11 support
+  return obj !== obj // eslint-disable-line no-self-compare
+}
+
+// Create lookup table for `toString('hex')`
+// See: https://github.com/feross/buffer/issues/219
+const hexSliceLookupTable = (function () {
+  const alphabet = '0123456789abcdef'
+  const table = new Array(256)
+  for (let i = 0; i < 16; ++i) {
+    const i16 = i * 16
+    for (let j = 0; j < 16; ++j) {
+      table[i16 + j] = alphabet[i] + alphabet[j]
+    }
+  }
+  return table
+})()
+
+// Return not function with Error if BigInt not supported
+function defineBigIntMethod (fn) {
+  return typeof BigInt === 'undefined' ? BufferBigIntNotDefined : fn
+}
+
+function BufferBigIntNotDefined () {
+  throw new Error('BigInt not supported')
+}
+
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			id: moduleId,
+/******/ 			loaded: false,
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Flag the module as loaded
+/******/ 		module.loaded = true;
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = __webpack_modules__;
 /******/ 	
 /************************************************************************/
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/create fake namespace object */
+/******/ 	(() => {
+/******/ 		var getProto = Object.getPrototypeOf ? (obj) => (Object.getPrototypeOf(obj)) : (obj) => (obj.__proto__);
+/******/ 		var leafPrototypes;
+/******/ 		// create a fake namespace object
+/******/ 		// mode & 1: value is a module id, require it
+/******/ 		// mode & 2: merge all properties of value into the ns
+/******/ 		// mode & 4: return value when already ns object
+/******/ 		// mode & 16: return value when it's Promise-like
+/******/ 		// mode & 8|1: behave like require
+/******/ 		__webpack_require__.t = function(value, mode) {
+/******/ 			if(mode & 1) value = this(value);
+/******/ 			if(mode & 8) return value;
+/******/ 			if(typeof value === 'object' && value) {
+/******/ 				if((mode & 4) && value.__esModule) return value;
+/******/ 				if((mode & 16) && typeof value.then === 'function') return value;
+/******/ 			}
+/******/ 			var ns = Object.create(null);
+/******/ 			__webpack_require__.r(ns);
+/******/ 			var def = {};
+/******/ 			leafPrototypes = leafPrototypes || [null, getProto({}), getProto([]), getProto(getProto)];
+/******/ 			for(var current = mode & 2 && value; typeof current == 'object' && !~leafPrototypes.indexOf(current); current = getProto(current)) {
+/******/ 				Object.getOwnPropertyNames(current).forEach((key) => (def[key] = () => (value[key])));
+/******/ 			}
+/******/ 			def['default'] = () => (value);
+/******/ 			__webpack_require__.d(ns, def);
+/******/ 			return ns;
+/******/ 		};
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	(() => {
 /******/ 		// define getter functions for harmony exports
@@ -16,9 +2717,89 @@
 /******/ 		};
 /******/ 	})();
 /******/ 	
+/******/ 	/* webpack/runtime/ensure chunk */
+/******/ 	(() => {
+/******/ 		__webpack_require__.f = {};
+/******/ 		// This file contains only the entry chunk.
+/******/ 		// The chunk loading function for additional chunks
+/******/ 		__webpack_require__.e = (chunkId) => {
+/******/ 			return Promise.all(Object.keys(__webpack_require__.f).reduce((promises, key) => {
+/******/ 				__webpack_require__.f[key](chunkId, promises);
+/******/ 				return promises;
+/******/ 			}, []));
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/get javascript chunk filename */
+/******/ 	(() => {
+/******/ 		// This function allow to reference async chunks
+/******/ 		__webpack_require__.u = (chunkId) => {
+/******/ 			// return url for filenames based on template
+/******/ 			return "" + chunkId + ".main.js";
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/global */
+/******/ 	(() => {
+/******/ 		__webpack_require__.g = (function() {
+/******/ 			if (typeof globalThis === 'object') return globalThis;
+/******/ 			try {
+/******/ 				return this || new Function('return this')();
+/******/ 			} catch (e) {
+/******/ 				if (typeof window === 'object') return window;
+/******/ 			}
+/******/ 		})();
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/hasOwnProperty shorthand */
 /******/ 	(() => {
 /******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/load script */
+/******/ 	(() => {
+/******/ 		var inProgress = {};
+/******/ 		var dataWebpackPrefix = "gaoma_pre:";
+/******/ 		// loadScript function to load a script via script tag
+/******/ 		__webpack_require__.l = (url, done, key, chunkId) => {
+/******/ 			if(inProgress[url]) { inProgress[url].push(done); return; }
+/******/ 			var script, needAttach;
+/******/ 			if(key !== undefined) {
+/******/ 				var scripts = document.getElementsByTagName("script");
+/******/ 				for(var i = 0; i < scripts.length; i++) {
+/******/ 					var s = scripts[i];
+/******/ 					if(s.getAttribute("src") == url || s.getAttribute("data-webpack") == dataWebpackPrefix + key) { script = s; break; }
+/******/ 				}
+/******/ 			}
+/******/ 			if(!script) {
+/******/ 				needAttach = true;
+/******/ 				script = document.createElement('script');
+/******/ 		
+/******/ 				script.charset = 'utf-8';
+/******/ 				script.timeout = 120;
+/******/ 				if (__webpack_require__.nc) {
+/******/ 					script.setAttribute("nonce", __webpack_require__.nc);
+/******/ 				}
+/******/ 				script.setAttribute("data-webpack", dataWebpackPrefix + key);
+/******/ 		
+/******/ 				script.src = url;
+/******/ 			}
+/******/ 			inProgress[url] = [done];
+/******/ 			var onScriptComplete = (prev, event) => {
+/******/ 				// avoid mem leaks in IE.
+/******/ 				script.onerror = script.onload = null;
+/******/ 				clearTimeout(timeout);
+/******/ 				var doneFns = inProgress[url];
+/******/ 				delete inProgress[url];
+/******/ 				script.parentNode && script.parentNode.removeChild(script);
+/******/ 				doneFns && doneFns.forEach((fn) => (fn(event)));
+/******/ 				if(prev) return prev(event);
+/******/ 			}
+/******/ 			var timeout = setTimeout(onScriptComplete.bind(null, undefined, { type: 'timeout', target: script }), 120000);
+/******/ 			script.onerror = onScriptComplete.bind(null, script.onerror);
+/******/ 			script.onload = onScriptComplete.bind(null, script.onload);
+/******/ 			needAttach && document.head.appendChild(script);
+/******/ 		};
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/make namespace object */
@@ -32,4128 +2813,3189 @@
 /******/ 		};
 /******/ 	})();
 /******/ 	
+/******/ 	/* webpack/runtime/node module decorator */
+/******/ 	(() => {
+/******/ 		__webpack_require__.nmd = (module) => {
+/******/ 			module.paths = [];
+/******/ 			if (!module.children) module.children = [];
+/******/ 			return module;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/publicPath */
+/******/ 	(() => {
+/******/ 		var scriptUrl;
+/******/ 		if (__webpack_require__.g.importScripts) scriptUrl = __webpack_require__.g.location + "";
+/******/ 		var document = __webpack_require__.g.document;
+/******/ 		if (!scriptUrl && document) {
+/******/ 			if (document.currentScript && document.currentScript.tagName.toUpperCase() === 'SCRIPT')
+/******/ 				scriptUrl = document.currentScript.src;
+/******/ 			if (!scriptUrl) {
+/******/ 				var scripts = document.getElementsByTagName("script");
+/******/ 				if(scripts.length) {
+/******/ 					var i = scripts.length - 1;
+/******/ 					while (i > -1 && (!scriptUrl || !/^http(s?):/.test(scriptUrl))) scriptUrl = scripts[i--].src;
+/******/ 				}
+/******/ 			}
+/******/ 		}
+/******/ 		// When supporting browsers where an automatic publicPath is not supported you must specify an output.publicPath manually via configuration
+/******/ 		// or pass an empty string ("") and set the __webpack_public_path__ variable from your code to use your own logic.
+/******/ 		if (!scriptUrl) throw new Error("Automatic publicPath is not supported in this browser");
+/******/ 		scriptUrl = scriptUrl.replace(/^blob:/, "").replace(/#.*$/, "").replace(/\?.*$/, "").replace(/\/[^\/]+$/, "/");
+/******/ 		__webpack_require__.p = scriptUrl;
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/jsonp chunk loading */
+/******/ 	(() => {
+/******/ 		// no baseURI
+/******/ 		
+/******/ 		// object to store loaded and loading chunks
+/******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
+/******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
+/******/ 		var installedChunks = {
+/******/ 			792: 0
+/******/ 		};
+/******/ 		
+/******/ 		__webpack_require__.f.j = (chunkId, promises) => {
+/******/ 				// JSONP chunk loading for javascript
+/******/ 				var installedChunkData = __webpack_require__.o(installedChunks, chunkId) ? installedChunks[chunkId] : undefined;
+/******/ 				if(installedChunkData !== 0) { // 0 means "already installed".
+/******/ 		
+/******/ 					// a Promise means "currently loading".
+/******/ 					if(installedChunkData) {
+/******/ 						promises.push(installedChunkData[2]);
+/******/ 					} else {
+/******/ 						if(true) { // all chunks have JS
+/******/ 							// setup Promise in chunk cache
+/******/ 							var promise = new Promise((resolve, reject) => (installedChunkData = installedChunks[chunkId] = [resolve, reject]));
+/******/ 							promises.push(installedChunkData[2] = promise);
+/******/ 		
+/******/ 							// start chunk loading
+/******/ 							var url = __webpack_require__.p + __webpack_require__.u(chunkId);
+/******/ 							// create error before stack unwound to get useful stacktrace later
+/******/ 							var error = new Error();
+/******/ 							var loadingEnded = (event) => {
+/******/ 								if(__webpack_require__.o(installedChunks, chunkId)) {
+/******/ 									installedChunkData = installedChunks[chunkId];
+/******/ 									if(installedChunkData !== 0) installedChunks[chunkId] = undefined;
+/******/ 									if(installedChunkData) {
+/******/ 										var errorType = event && (event.type === 'load' ? 'missing' : event.type);
+/******/ 										var realSrc = event && event.target && event.target.src;
+/******/ 										error.message = 'Loading chunk ' + chunkId + ' failed.\n(' + errorType + ': ' + realSrc + ')';
+/******/ 										error.name = 'ChunkLoadError';
+/******/ 										error.type = errorType;
+/******/ 										error.request = realSrc;
+/******/ 										installedChunkData[1](error);
+/******/ 									}
+/******/ 								}
+/******/ 							};
+/******/ 							__webpack_require__.l(url, loadingEnded, "chunk-" + chunkId, chunkId);
+/******/ 						}
+/******/ 					}
+/******/ 				}
+/******/ 		};
+/******/ 		
+/******/ 		// no prefetching
+/******/ 		
+/******/ 		// no preloaded
+/******/ 		
+/******/ 		// no HMR
+/******/ 		
+/******/ 		// no HMR manifest
+/******/ 		
+/******/ 		// no on chunks loaded
+/******/ 		
+/******/ 		// install a JSONP callback for chunk loading
+/******/ 		var webpackJsonpCallback = (parentChunkLoadingFunction, data) => {
+/******/ 			var [chunkIds, moreModules, runtime] = data;
+/******/ 			// add "moreModules" to the modules object,
+/******/ 			// then flag all "chunkIds" as loaded and fire callback
+/******/ 			var moduleId, chunkId, i = 0;
+/******/ 			if(chunkIds.some((id) => (installedChunks[id] !== 0))) {
+/******/ 				for(moduleId in moreModules) {
+/******/ 					if(__webpack_require__.o(moreModules, moduleId)) {
+/******/ 						__webpack_require__.m[moduleId] = moreModules[moduleId];
+/******/ 					}
+/******/ 				}
+/******/ 				if(runtime) var result = runtime(__webpack_require__);
+/******/ 			}
+/******/ 			if(parentChunkLoadingFunction) parentChunkLoadingFunction(data);
+/******/ 			for(;i < chunkIds.length; i++) {
+/******/ 				chunkId = chunkIds[i];
+/******/ 				if(__webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId]) {
+/******/ 					installedChunks[chunkId][0]();
+/******/ 				}
+/******/ 				installedChunks[chunkId] = 0;
+/******/ 			}
+/******/ 		
+/******/ 		}
+/******/ 		
+/******/ 		var chunkLoadingGlobal = self["webpackChunkgaoma_pre"] = self["webpackChunkgaoma_pre"] || [];
+/******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
+/******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
+/******/ 	})();
+/******/ 	
 /************************************************************************/
+var __webpack_exports__ = {};
+// This entry needs to be wrapped in an IIFE because it needs to be in strict mode.
+(() => {
+"use strict";
 
-// NAMESPACE OBJECT: ./node_modules/axios/lib/platform/common/utils.js
-var common_utils_namespaceObject = {};
-__webpack_require__.r(common_utils_namespaceObject);
-__webpack_require__.d(common_utils_namespaceObject, {
-  hasBrowserEnv: () => (hasBrowserEnv),
-  hasStandardBrowserEnv: () => (hasStandardBrowserEnv),
-  hasStandardBrowserWebWorkerEnv: () => (hasStandardBrowserWebWorkerEnv),
-  navigator: () => (_navigator),
-  origin: () => (origin)
-});
-
-;// ./node_modules/axios/lib/helpers/bind.js
-
-
-function bind(fn, thisArg) {
-  return function wrap() {
-    return fn.apply(thisArg, arguments);
-  };
-}
-
-;// ./node_modules/axios/lib/utils.js
-
-
-
-
-// utils is a library of generic helper functions non-specific to axios
-
-const {toString: utils_toString} = Object.prototype;
-const {getPrototypeOf} = Object;
-const {iterator, toStringTag} = Symbol;
-
-const kindOf = (cache => thing => {
-    const str = utils_toString.call(thing);
-    return cache[str] || (cache[str] = str.slice(8, -1).toLowerCase());
-})(Object.create(null));
-
-const kindOfTest = (type) => {
-  type = type.toLowerCase();
-  return (thing) => kindOf(thing) === type
-}
-
-const typeOfTest = type => thing => typeof thing === type;
-
+;// ./node_modules/crystals-kyber-js/esm/src/errors.js
 /**
- * Determine if a value is an Array
- *
- * @param {Object} val The value to test
- *
- * @returns {boolean} True if value is an Array, otherwise false
+ * The base error class of kyber-ts.
  */
-const {isArray} = Array;
-
-/**
- * Determine if a value is undefined
- *
- * @param {*} val The value to test
- *
- * @returns {boolean} True if the value is undefined, otherwise false
- */
-const isUndefined = typeOfTest('undefined');
-
-/**
- * Determine if a value is a Buffer
- *
- * @param {*} val The value to test
- *
- * @returns {boolean} True if value is a Buffer, otherwise false
- */
-function isBuffer(val) {
-  return val !== null && !isUndefined(val) && val.constructor !== null && !isUndefined(val.constructor)
-    && isFunction(val.constructor.isBuffer) && val.constructor.isBuffer(val);
-}
-
-/**
- * Determine if a value is an ArrayBuffer
- *
- * @param {*} val The value to test
- *
- * @returns {boolean} True if value is an ArrayBuffer, otherwise false
- */
-const isArrayBuffer = kindOfTest('ArrayBuffer');
-
-
-/**
- * Determine if a value is a view on an ArrayBuffer
- *
- * @param {*} val The value to test
- *
- * @returns {boolean} True if value is a view on an ArrayBuffer, otherwise false
- */
-function isArrayBufferView(val) {
-  let result;
-  if ((typeof ArrayBuffer !== 'undefined') && (ArrayBuffer.isView)) {
-    result = ArrayBuffer.isView(val);
-  } else {
-    result = (val) && (val.buffer) && (isArrayBuffer(val.buffer));
-  }
-  return result;
-}
-
-/**
- * Determine if a value is a String
- *
- * @param {*} val The value to test
- *
- * @returns {boolean} True if value is a String, otherwise false
- */
-const isString = typeOfTest('string');
-
-/**
- * Determine if a value is a Function
- *
- * @param {*} val The value to test
- * @returns {boolean} True if value is a Function, otherwise false
- */
-const isFunction = typeOfTest('function');
-
-/**
- * Determine if a value is a Number
- *
- * @param {*} val The value to test
- *
- * @returns {boolean} True if value is a Number, otherwise false
- */
-const isNumber = typeOfTest('number');
-
-/**
- * Determine if a value is an Object
- *
- * @param {*} thing The value to test
- *
- * @returns {boolean} True if value is an Object, otherwise false
- */
-const isObject = (thing) => thing !== null && typeof thing === 'object';
-
-/**
- * Determine if a value is a Boolean
- *
- * @param {*} thing The value to test
- * @returns {boolean} True if value is a Boolean, otherwise false
- */
-const isBoolean = thing => thing === true || thing === false;
-
-/**
- * Determine if a value is a plain Object
- *
- * @param {*} val The value to test
- *
- * @returns {boolean} True if value is a plain Object, otherwise false
- */
-const isPlainObject = (val) => {
-  if (kindOf(val) !== 'object') {
-    return false;
-  }
-
-  const prototype = getPrototypeOf(val);
-  return (prototype === null || prototype === Object.prototype || Object.getPrototypeOf(prototype) === null) && !(toStringTag in val) && !(iterator in val);
-}
-
-/**
- * Determine if a value is a Date
- *
- * @param {*} val The value to test
- *
- * @returns {boolean} True if value is a Date, otherwise false
- */
-const isDate = kindOfTest('Date');
-
-/**
- * Determine if a value is a File
- *
- * @param {*} val The value to test
- *
- * @returns {boolean} True if value is a File, otherwise false
- */
-const isFile = kindOfTest('File');
-
-/**
- * Determine if a value is a Blob
- *
- * @param {*} val The value to test
- *
- * @returns {boolean} True if value is a Blob, otherwise false
- */
-const isBlob = kindOfTest('Blob');
-
-/**
- * Determine if a value is a FileList
- *
- * @param {*} val The value to test
- *
- * @returns {boolean} True if value is a File, otherwise false
- */
-const isFileList = kindOfTest('FileList');
-
-/**
- * Determine if a value is a Stream
- *
- * @param {*} val The value to test
- *
- * @returns {boolean} True if value is a Stream, otherwise false
- */
-const isStream = (val) => isObject(val) && isFunction(val.pipe);
-
-/**
- * Determine if a value is a FormData
- *
- * @param {*} thing The value to test
- *
- * @returns {boolean} True if value is an FormData, otherwise false
- */
-const isFormData = (thing) => {
-  let kind;
-  return thing && (
-    (typeof FormData === 'function' && thing instanceof FormData) || (
-      isFunction(thing.append) && (
-        (kind = kindOf(thing)) === 'formdata' ||
-        // detect form-data instance
-        (kind === 'object' && isFunction(thing.toString) && thing.toString() === '[object FormData]')
-      )
-    )
-  )
-}
-
-/**
- * Determine if a value is a URLSearchParams object
- *
- * @param {*} val The value to test
- *
- * @returns {boolean} True if value is a URLSearchParams object, otherwise false
- */
-const isURLSearchParams = kindOfTest('URLSearchParams');
-
-const [isReadableStream, isRequest, isResponse, isHeaders] = ['ReadableStream', 'Request', 'Response', 'Headers'].map(kindOfTest);
-
-/**
- * Trim excess whitespace off the beginning and end of a string
- *
- * @param {String} str The String to trim
- *
- * @returns {String} The String freed of excess whitespace
- */
-const trim = (str) => str.trim ?
-  str.trim() : str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
-
-/**
- * Iterate over an Array or an Object invoking a function for each item.
- *
- * If `obj` is an Array callback will be called passing
- * the value, index, and complete array for each item.
- *
- * If 'obj' is an Object callback will be called passing
- * the value, key, and complete object for each property.
- *
- * @param {Object|Array} obj The object to iterate
- * @param {Function} fn The callback to invoke for each item
- *
- * @param {Boolean} [allOwnKeys = false]
- * @returns {any}
- */
-function forEach(obj, fn, {allOwnKeys = false} = {}) {
-  // Don't bother if no value provided
-  if (obj === null || typeof obj === 'undefined') {
-    return;
-  }
-
-  let i;
-  let l;
-
-  // Force an array if not already something iterable
-  if (typeof obj !== 'object') {
-    /*eslint no-param-reassign:0*/
-    obj = [obj];
-  }
-
-  if (isArray(obj)) {
-    // Iterate over array values
-    for (i = 0, l = obj.length; i < l; i++) {
-      fn.call(null, obj[i], i, obj);
+class MlKemError extends Error {
+    constructor(e) {
+        let message;
+        if (e instanceof Error) {
+            message = e.message;
+        }
+        else if (typeof e === "string") {
+            message = e;
+        }
+        else {
+            message = "";
+        }
+        super(message);
+        this.name = this.constructor.name;
     }
-  } else {
-    // Iterate over object keys
-    const keys = allOwnKeys ? Object.getOwnPropertyNames(obj) : Object.keys(obj);
-    const len = keys.length;
-    let key;
+}
 
-    for (i = 0; i < len; i++) {
-      key = keys[i];
-      fn.call(null, obj[key], key, obj);
+;// ./node_modules/crystals-kyber-js/esm/src/consts.js
+/**
+ * This implementation is based on https://github.com/antontutoveanu/crystals-kyber-javascript,
+ * which was deveploped under the MIT licence below:
+ * https://github.com/antontutoveanu/crystals-kyber-javascript/blob/main/LICENSE
+ */
+const N = 256;
+const Q = 3329;
+const Q_INV = 62209;
+// deno-fmt-ignore
+const NTT_ZETAS = [
+    2285, 2571, 2970, 1812, 1493, 1422, 287, 202, 3158, 622, 1577, 182, 962,
+    2127, 1855, 1468, 573, 2004, 264, 383, 2500, 1458, 1727, 3199, 2648, 1017,
+    732, 608, 1787, 411, 3124, 1758, 1223, 652, 2777, 1015, 2036, 1491, 3047,
+    1785, 516, 3321, 3009, 2663, 1711, 2167, 126, 1469, 2476, 3239, 3058, 830,
+    107, 1908, 3082, 2378, 2931, 961, 1821, 2604, 448, 2264, 677, 2054, 2226,
+    430, 555, 843, 2078, 871, 1550, 105, 422, 587, 177, 3094, 3038, 2869, 1574,
+    1653, 3083, 778, 1159, 3182, 2552, 1483, 2727, 1119, 1739, 644, 2457, 349,
+    418, 329, 3173, 3254, 817, 1097, 603, 610, 1322, 2044, 1864, 384, 2114, 3193,
+    1218, 1994, 2455, 220, 2142, 1670, 2144, 1799, 2051, 794, 1819, 2475, 2459,
+    478, 3221, 3021, 996, 991, 958, 1869, 1522, 1628,
+];
+// deno-fmt-ignore
+const NTT_ZETAS_INV = [
+    1701, 1807, 1460, 2371, 2338, 2333, 308, 108, 2851, 870, 854, 1510, 2535,
+    1278, 1530, 1185, 1659, 1187, 3109, 874, 1335, 2111, 136, 1215, 2945, 1465,
+    1285, 2007, 2719, 2726, 2232, 2512, 75, 156, 3000, 2911, 2980, 872, 2685,
+    1590, 2210, 602, 1846, 777, 147, 2170, 2551, 246, 1676, 1755, 460, 291, 235,
+    3152, 2742, 2907, 3224, 1779, 2458, 1251, 2486, 2774, 2899, 1103, 1275, 2652,
+    1065, 2881, 725, 1508, 2368, 398, 951, 247, 1421, 3222, 2499, 271, 90, 853,
+    1860, 3203, 1162, 1618, 666, 320, 8, 2813, 1544, 282, 1838, 1293, 2314, 552,
+    2677, 2106, 1571, 205, 2918, 1542, 2721, 2597, 2312, 681, 130, 1602, 1871,
+    829, 2946, 3065, 1325, 2756, 1861, 1474, 1202, 2367, 3147, 1752, 2707, 171,
+    3127, 3042, 1907, 1836, 1517, 359, 758, 1441,
+];
+
+;// ./node_modules/crystals-kyber-js/esm/src/sha3/_u64.js
+/**
+ * This file is based on noble-hashes (https://github.com/paulmillr/noble-hashes).
+ *
+ * noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com)
+ *
+ * The original file is located at:
+ * https://github.com/paulmillr/noble-hashes/blob/4e358a46d682adfb005ae6314ec999f2513086b9/src/_u64.ts
+ */
+/**
+ * Internal helpers for u64. BigUint64Array is too slow as per 2025, so we implement it using Uint32Array.
+ * @todo re-check https://issues.chromium.org/issues/42212588
+ * @module
+ */
+const U32_MASK64 = /* @__PURE__ */ BigInt(2 ** 32 - 1);
+const _32n = /* @__PURE__ */ BigInt(32);
+function fromBig(n, le = false) {
+    if (le) {
+        return { h: Number(n & U32_MASK64), l: Number((n >> _32n) & U32_MASK64) };
     }
-  }
-}
-
-function findKey(obj, key) {
-  key = key.toLowerCase();
-  const keys = Object.keys(obj);
-  let i = keys.length;
-  let _key;
-  while (i-- > 0) {
-    _key = keys[i];
-    if (key === _key.toLowerCase()) {
-      return _key;
-    }
-  }
-  return null;
-}
-
-const _global = (() => {
-  /*eslint no-undef:0*/
-  if (typeof globalThis !== "undefined") return globalThis;
-  return typeof self !== "undefined" ? self : (typeof window !== 'undefined' ? window : global)
-})();
-
-const isContextDefined = (context) => !isUndefined(context) && context !== _global;
-
-/**
- * Accepts varargs expecting each argument to be an object, then
- * immutably merges the properties of each object and returns result.
- *
- * When multiple objects contain the same key the later object in
- * the arguments list will take precedence.
- *
- * Example:
- *
- * ```js
- * var result = merge({foo: 123}, {foo: 456});
- * console.log(result.foo); // outputs 456
- * ```
- *
- * @param {Object} obj1 Object to merge
- *
- * @returns {Object} Result of all merge properties
- */
-function merge(/* obj1, obj2, obj3, ... */) {
-  const {caseless} = isContextDefined(this) && this || {};
-  const result = {};
-  const assignValue = (val, key) => {
-    const targetKey = caseless && findKey(result, key) || key;
-    if (isPlainObject(result[targetKey]) && isPlainObject(val)) {
-      result[targetKey] = merge(result[targetKey], val);
-    } else if (isPlainObject(val)) {
-      result[targetKey] = merge({}, val);
-    } else if (isArray(val)) {
-      result[targetKey] = val.slice();
-    } else {
-      result[targetKey] = val;
-    }
-  }
-
-  for (let i = 0, l = arguments.length; i < l; i++) {
-    arguments[i] && forEach(arguments[i], assignValue);
-  }
-  return result;
-}
-
-/**
- * Extends object a by mutably adding to it the properties of object b.
- *
- * @param {Object} a The object to be extended
- * @param {Object} b The object to copy properties from
- * @param {Object} thisArg The object to bind function to
- *
- * @param {Boolean} [allOwnKeys]
- * @returns {Object} The resulting value of object a
- */
-const extend = (a, b, thisArg, {allOwnKeys}= {}) => {
-  forEach(b, (val, key) => {
-    if (thisArg && isFunction(val)) {
-      a[key] = bind(val, thisArg);
-    } else {
-      a[key] = val;
-    }
-  }, {allOwnKeys});
-  return a;
-}
-
-/**
- * Remove byte order marker. This catches EF BB BF (the UTF-8 BOM)
- *
- * @param {string} content with BOM
- *
- * @returns {string} content value without BOM
- */
-const stripBOM = (content) => {
-  if (content.charCodeAt(0) === 0xFEFF) {
-    content = content.slice(1);
-  }
-  return content;
-}
-
-/**
- * Inherit the prototype methods from one constructor into another
- * @param {function} constructor
- * @param {function} superConstructor
- * @param {object} [props]
- * @param {object} [descriptors]
- *
- * @returns {void}
- */
-const inherits = (constructor, superConstructor, props, descriptors) => {
-  constructor.prototype = Object.create(superConstructor.prototype, descriptors);
-  constructor.prototype.constructor = constructor;
-  Object.defineProperty(constructor, 'super', {
-    value: superConstructor.prototype
-  });
-  props && Object.assign(constructor.prototype, props);
-}
-
-/**
- * Resolve object with deep prototype chain to a flat object
- * @param {Object} sourceObj source object
- * @param {Object} [destObj]
- * @param {Function|Boolean} [filter]
- * @param {Function} [propFilter]
- *
- * @returns {Object}
- */
-const toFlatObject = (sourceObj, destObj, filter, propFilter) => {
-  let props;
-  let i;
-  let prop;
-  const merged = {};
-
-  destObj = destObj || {};
-  // eslint-disable-next-line no-eq-null,eqeqeq
-  if (sourceObj == null) return destObj;
-
-  do {
-    props = Object.getOwnPropertyNames(sourceObj);
-    i = props.length;
-    while (i-- > 0) {
-      prop = props[i];
-      if ((!propFilter || propFilter(prop, sourceObj, destObj)) && !merged[prop]) {
-        destObj[prop] = sourceObj[prop];
-        merged[prop] = true;
-      }
-    }
-    sourceObj = filter !== false && getPrototypeOf(sourceObj);
-  } while (sourceObj && (!filter || filter(sourceObj, destObj)) && sourceObj !== Object.prototype);
-
-  return destObj;
-}
-
-/**
- * Determines whether a string ends with the characters of a specified string
- *
- * @param {String} str
- * @param {String} searchString
- * @param {Number} [position= 0]
- *
- * @returns {boolean}
- */
-const endsWith = (str, searchString, position) => {
-  str = String(str);
-  if (position === undefined || position > str.length) {
-    position = str.length;
-  }
-  position -= searchString.length;
-  const lastIndex = str.indexOf(searchString, position);
-  return lastIndex !== -1 && lastIndex === position;
-}
-
-
-/**
- * Returns new array from array like object or null if failed
- *
- * @param {*} [thing]
- *
- * @returns {?Array}
- */
-const toArray = (thing) => {
-  if (!thing) return null;
-  if (isArray(thing)) return thing;
-  let i = thing.length;
-  if (!isNumber(i)) return null;
-  const arr = new Array(i);
-  while (i-- > 0) {
-    arr[i] = thing[i];
-  }
-  return arr;
-}
-
-/**
- * Checking if the Uint8Array exists and if it does, it returns a function that checks if the
- * thing passed in is an instance of Uint8Array
- *
- * @param {TypedArray}
- *
- * @returns {Array}
- */
-// eslint-disable-next-line func-names
-const isTypedArray = (TypedArray => {
-  // eslint-disable-next-line func-names
-  return thing => {
-    return TypedArray && thing instanceof TypedArray;
-  };
-})(typeof Uint8Array !== 'undefined' && getPrototypeOf(Uint8Array));
-
-/**
- * For each entry in the object, call the function with the key and value.
- *
- * @param {Object<any, any>} obj - The object to iterate over.
- * @param {Function} fn - The function to call for each entry.
- *
- * @returns {void}
- */
-const forEachEntry = (obj, fn) => {
-  const generator = obj && obj[iterator];
-
-  const _iterator = generator.call(obj);
-
-  let result;
-
-  while ((result = _iterator.next()) && !result.done) {
-    const pair = result.value;
-    fn.call(obj, pair[0], pair[1]);
-  }
-}
-
-/**
- * It takes a regular expression and a string, and returns an array of all the matches
- *
- * @param {string} regExp - The regular expression to match against.
- * @param {string} str - The string to search.
- *
- * @returns {Array<boolean>}
- */
-const matchAll = (regExp, str) => {
-  let matches;
-  const arr = [];
-
-  while ((matches = regExp.exec(str)) !== null) {
-    arr.push(matches);
-  }
-
-  return arr;
-}
-
-/* Checking if the kindOfTest function returns true when passed an HTMLFormElement. */
-const isHTMLForm = kindOfTest('HTMLFormElement');
-
-const toCamelCase = str => {
-  return str.toLowerCase().replace(/[-_\s]([a-z\d])(\w*)/g,
-    function replacer(m, p1, p2) {
-      return p1.toUpperCase() + p2;
-    }
-  );
-};
-
-/* Creating a function that will check if an object has a property. */
-const utils_hasOwnProperty = (({hasOwnProperty}) => (obj, prop) => hasOwnProperty.call(obj, prop))(Object.prototype);
-
-/**
- * Determine if a value is a RegExp object
- *
- * @param {*} val The value to test
- *
- * @returns {boolean} True if value is a RegExp object, otherwise false
- */
-const isRegExp = kindOfTest('RegExp');
-
-const reduceDescriptors = (obj, reducer) => {
-  const descriptors = Object.getOwnPropertyDescriptors(obj);
-  const reducedDescriptors = {};
-
-  forEach(descriptors, (descriptor, name) => {
-    let ret;
-    if ((ret = reducer(descriptor, name, obj)) !== false) {
-      reducedDescriptors[name] = ret || descriptor;
-    }
-  });
-
-  Object.defineProperties(obj, reducedDescriptors);
-}
-
-/**
- * Makes all methods read-only
- * @param {Object} obj
- */
-
-const freezeMethods = (obj) => {
-  reduceDescriptors(obj, (descriptor, name) => {
-    // skip restricted props in strict mode
-    if (isFunction(obj) && ['arguments', 'caller', 'callee'].indexOf(name) !== -1) {
-      return false;
-    }
-
-    const value = obj[name];
-
-    if (!isFunction(value)) return;
-
-    descriptor.enumerable = false;
-
-    if ('writable' in descriptor) {
-      descriptor.writable = false;
-      return;
-    }
-
-    if (!descriptor.set) {
-      descriptor.set = () => {
-        throw Error('Can not rewrite read-only method \'' + name + '\'');
-      };
-    }
-  });
-}
-
-const toObjectSet = (arrayOrString, delimiter) => {
-  const obj = {};
-
-  const define = (arr) => {
-    arr.forEach(value => {
-      obj[value] = true;
-    });
-  }
-
-  isArray(arrayOrString) ? define(arrayOrString) : define(String(arrayOrString).split(delimiter));
-
-  return obj;
-}
-
-const noop = () => {}
-
-const toFiniteNumber = (value, defaultValue) => {
-  return value != null && Number.isFinite(value = +value) ? value : defaultValue;
-}
-
-/**
- * If the thing is a FormData object, return true, otherwise return false.
- *
- * @param {unknown} thing - The thing to check.
- *
- * @returns {boolean}
- */
-function isSpecCompliantForm(thing) {
-  return !!(thing && isFunction(thing.append) && thing[toStringTag] === 'FormData' && thing[iterator]);
-}
-
-const toJSONObject = (obj) => {
-  const stack = new Array(10);
-
-  const visit = (source, i) => {
-
-    if (isObject(source)) {
-      if (stack.indexOf(source) >= 0) {
-        return;
-      }
-
-      if(!('toJSON' in source)) {
-        stack[i] = source;
-        const target = isArray(source) ? [] : {};
-
-        forEach(source, (value, key) => {
-          const reducedValue = visit(value, i + 1);
-          !isUndefined(reducedValue) && (target[key] = reducedValue);
-        });
-
-        stack[i] = undefined;
-
-        return target;
-      }
-    }
-
-    return source;
-  }
-
-  return visit(obj, 0);
-}
-
-const isAsyncFn = kindOfTest('AsyncFunction');
-
-const isThenable = (thing) =>
-  thing && (isObject(thing) || isFunction(thing)) && isFunction(thing.then) && isFunction(thing.catch);
-
-// original code
-// https://github.com/DigitalBrainJS/AxiosPromise/blob/16deab13710ec09779922131f3fa5954320f83ab/lib/utils.js#L11-L34
-
-const _setImmediate = ((setImmediateSupported, postMessageSupported) => {
-  if (setImmediateSupported) {
-    return setImmediate;
-  }
-
-  return postMessageSupported ? ((token, callbacks) => {
-    _global.addEventListener("message", ({source, data}) => {
-      if (source === _global && data === token) {
-        callbacks.length && callbacks.shift()();
-      }
-    }, false);
-
-    return (cb) => {
-      callbacks.push(cb);
-      _global.postMessage(token, "*");
-    }
-  })(`axios@${Math.random()}`, []) : (cb) => setTimeout(cb);
-})(
-  typeof setImmediate === 'function',
-  isFunction(_global.postMessage)
-);
-
-const asap = typeof queueMicrotask !== 'undefined' ?
-  queueMicrotask.bind(_global) : ( typeof process !== 'undefined' && process.nextTick || _setImmediate);
-
-// *********************
-
-
-const isIterable = (thing) => thing != null && isFunction(thing[iterator]);
-
-
-/* harmony default export */ const utils = ({
-  isArray,
-  isArrayBuffer,
-  isBuffer,
-  isFormData,
-  isArrayBufferView,
-  isString,
-  isNumber,
-  isBoolean,
-  isObject,
-  isPlainObject,
-  isReadableStream,
-  isRequest,
-  isResponse,
-  isHeaders,
-  isUndefined,
-  isDate,
-  isFile,
-  isBlob,
-  isRegExp,
-  isFunction,
-  isStream,
-  isURLSearchParams,
-  isTypedArray,
-  isFileList,
-  forEach,
-  merge,
-  extend,
-  trim,
-  stripBOM,
-  inherits,
-  toFlatObject,
-  kindOf,
-  kindOfTest,
-  endsWith,
-  toArray,
-  forEachEntry,
-  matchAll,
-  isHTMLForm,
-  hasOwnProperty: utils_hasOwnProperty,
-  hasOwnProp: utils_hasOwnProperty, // an alias to avoid ESLint no-prototype-builtins detection
-  reduceDescriptors,
-  freezeMethods,
-  toObjectSet,
-  toCamelCase,
-  noop,
-  toFiniteNumber,
-  findKey,
-  global: _global,
-  isContextDefined,
-  isSpecCompliantForm,
-  toJSONObject,
-  isAsyncFn,
-  isThenable,
-  setImmediate: _setImmediate,
-  asap,
-  isIterable
-});
-
-;// ./node_modules/axios/lib/core/AxiosError.js
-
-
-
-
-/**
- * Create an Error with the specified message, config, error code, request and response.
- *
- * @param {string} message The error message.
- * @param {string} [code] The error code (for example, 'ECONNABORTED').
- * @param {Object} [config] The config.
- * @param {Object} [request] The request.
- * @param {Object} [response] The response.
- *
- * @returns {Error} The created error.
- */
-function AxiosError(message, code, config, request, response) {
-  Error.call(this);
-
-  if (Error.captureStackTrace) {
-    Error.captureStackTrace(this, this.constructor);
-  } else {
-    this.stack = (new Error()).stack;
-  }
-
-  this.message = message;
-  this.name = 'AxiosError';
-  code && (this.code = code);
-  config && (this.config = config);
-  request && (this.request = request);
-  if (response) {
-    this.response = response;
-    this.status = response.status ? response.status : null;
-  }
-}
-
-utils.inherits(AxiosError, Error, {
-  toJSON: function toJSON() {
     return {
-      // Standard
-      message: this.message,
-      name: this.name,
-      // Microsoft
-      description: this.description,
-      number: this.number,
-      // Mozilla
-      fileName: this.fileName,
-      lineNumber: this.lineNumber,
-      columnNumber: this.columnNumber,
-      stack: this.stack,
-      // Axios
-      config: utils.toJSONObject(this.config),
-      code: this.code,
-      status: this.status
+        h: Number((n >> _32n) & U32_MASK64) | 0,
+        l: Number(n & U32_MASK64) | 0,
     };
-  }
-});
+}
+function split(lst, le = false) {
+    const len = lst.length;
+    const Ah = new Uint32Array(len);
+    const Al = new Uint32Array(len);
+    for (let i = 0; i < len; i++) {
+        const { h, l } = fromBig(lst[i], le);
+        [Ah[i], Al[i]] = [h, l];
+    }
+    return [Ah, Al];
+}
+const toBig = (h, l) => (BigInt(h >>> 0) << _32n) | BigInt(l >>> 0);
+// for Shift in [0, 32)
+const shrSH = (h, _l, s) => h >>> s;
+const shrSL = (h, l, s) => (h << (32 - s)) | (l >>> s);
+// Right rotate for Shift in [1, 32)
+const rotrSH = (h, l, s) => (h >>> s) | (l << (32 - s));
+const rotrSL = (h, l, s) => (h << (32 - s)) | (l >>> s);
+// Right rotate for Shift in (32, 64), NOTE: 32 is special case.
+const rotrBH = (h, l, s) => (h << (64 - s)) | (l >>> (s - 32));
+const rotrBL = (h, l, s) => (h >>> (s - 32)) | (l << (64 - s));
+// Right rotate for shift===32 (just swaps l&h)
+const rotr32H = (_h, l) => l;
+const rotr32L = (h, _l) => h;
+// Left rotate for Shift in [1, 32)
+const rotlSH = (h, l, s) => (h << s) | (l >>> (32 - s));
+const rotlSL = (h, l, s) => (l << s) | (h >>> (32 - s));
+// Left rotate for Shift in (32, 64), NOTE: 32 is special case.
+const rotlBH = (h, l, s) => (l << (s - 32)) | (h >>> (64 - s));
+const rotlBL = (h, l, s) => (h << (s - 32)) | (l >>> (64 - s));
+// JS uses 32-bit signed integers for bitwise operations which means we cannot
+// simple take carry out of low bit sum by shift, we need to use division.
+function add(Ah, Al, Bh, Bl) {
+    const l = (Al >>> 0) + (Bl >>> 0);
+    return { h: (Ah + Bh + ((l / 2 ** 32) | 0)) | 0, l: l | 0 };
+}
+// Addition with more than 2 elements
+const add3L = (Al, Bl, Cl) => (Al >>> 0) + (Bl >>> 0) + (Cl >>> 0);
+const add3H = (low, Ah, Bh, Ch) => (Ah + Bh + Ch + ((low / 2 ** 32) | 0)) | 0;
+const add4L = (Al, Bl, Cl, Dl) => (Al >>> 0) + (Bl >>> 0) + (Cl >>> 0) + (Dl >>> 0);
+const add4H = (low, Ah, Bh, Ch, Dh) => (Ah + Bh + Ch + Dh + ((low / 2 ** 32) | 0)) | 0;
+const add5L = (Al, Bl, Cl, Dl, El) => (Al >>> 0) + (Bl >>> 0) + (Cl >>> 0) + (Dl >>> 0) + (El >>> 0);
+const add5H = (low, Ah, Bh, Ch, Dh, Eh) => (Ah + Bh + Ch + Dh + Eh + ((low / 2 ** 32) | 0)) | 0;
+// prettier-ignore
 
-const AxiosError_prototype = AxiosError.prototype;
-const descriptors = {};
-
-[
-  'ERR_BAD_OPTION_VALUE',
-  'ERR_BAD_OPTION',
-  'ECONNABORTED',
-  'ETIMEDOUT',
-  'ERR_NETWORK',
-  'ERR_FR_TOO_MANY_REDIRECTS',
-  'ERR_DEPRECATED',
-  'ERR_BAD_RESPONSE',
-  'ERR_BAD_REQUEST',
-  'ERR_CANCELED',
-  'ERR_NOT_SUPPORT',
-  'ERR_INVALID_URL'
-// eslint-disable-next-line func-names
-].forEach(code => {
-  descriptors[code] = {value: code};
-});
-
-Object.defineProperties(AxiosError, descriptors);
-Object.defineProperty(AxiosError_prototype, 'isAxiosError', {value: true});
-
-// eslint-disable-next-line func-names
-AxiosError.from = (error, code, config, request, response, customProps) => {
-  const axiosError = Object.create(AxiosError_prototype);
-
-  utils.toFlatObject(error, axiosError, function filter(obj) {
-    return obj !== Error.prototype;
-  }, prop => {
-    return prop !== 'isAxiosError';
-  });
-
-  AxiosError.call(axiosError, error.message, code, config, request, response);
-
-  axiosError.cause = error;
-
-  axiosError.name = error.name;
-
-  customProps && Object.assign(axiosError, customProps);
-
-  return axiosError;
+// prettier-ignore
+const u64 = {
+    fromBig,
+    split,
+    toBig,
+    shrSH,
+    shrSL,
+    rotrSH,
+    rotrSL,
+    rotrBH,
+    rotrBL,
+    rotr32H,
+    rotr32L,
+    rotlSH,
+    rotlSL,
+    rotlBH,
+    rotlBL,
+    add,
+    add3L,
+    add3H,
+    add4L,
+    add4H,
+    add5H,
+    add5L,
 };
+/* harmony default export */ const _u64 = ((/* unused pure expression or super */ null && (u64)));
 
-/* harmony default export */ const core_AxiosError = (AxiosError);
-
-;// ./node_modules/axios/lib/helpers/null.js
-// eslint-disable-next-line strict
-/* harmony default export */ const helpers_null = (null);
-
-;// ./node_modules/axios/lib/helpers/toFormData.js
-
-
-
-
-// temporary hotfix to avoid circular references until AxiosURLSearchParams is refactored
-
-
+;// ./node_modules/crystals-kyber-js/esm/src/sha3/utils.js
+// deno-lint-ignore-file no-explicit-any
 /**
- * Determines if the given thing is a array or js object.
+ * This file is based on noble-hashes (https://github.com/paulmillr/noble-hashes).
  *
- * @param {string} thing - The object or array to be visited.
+ * noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com)
  *
- * @returns {boolean}
+ * The original file is located at:
+ * https://github.com/paulmillr/noble-hashes/blob/4e358a46d682adfb005ae6314ec999f2513086b9/src/utils.ts
  */
-function isVisitable(thing) {
-  return utils.isPlainObject(thing) || utils.isArray(thing);
+/**
+ * Utilities for hex, bytes, CSPRNG.
+ * @module
+ */
+/*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
+/** Checks if something is Uint8Array. Be careful: nodejs Buffer will return true. */
+function isBytes(a) {
+    return a instanceof Uint8Array ||
+        (ArrayBuffer.isView(a) && a.constructor.name === "Uint8Array");
 }
-
-/**
- * It removes the brackets from the end of a string
- *
- * @param {string} key - The key of the parameter.
- *
- * @returns {string} the key without the brackets.
- */
-function removeBrackets(key) {
-  return utils.endsWith(key, '[]') ? key.slice(0, -2) : key;
+/** Asserts something is positive integer. */
+function anumber(n, title = "") {
+    if (!Number.isSafeInteger(n) || n < 0) {
+        const prefix = title && `"${title}" `;
+        throw new Error(`${prefix}expected integer >0, got ${n}`);
+    }
 }
-
-/**
- * It takes a path, a key, and a boolean, and returns a string
- *
- * @param {string} path - The path to the current key.
- * @param {string} key - The key of the current object being iterated over.
- * @param {string} dots - If true, the key will be rendered with dots instead of brackets.
- *
- * @returns {string} The path to the current key.
- */
-function renderKey(path, key, dots) {
-  if (!path) return key;
-  return path.concat(key).map(function each(token, i) {
-    // eslint-disable-next-line no-param-reassign
-    token = removeBrackets(token);
-    return !dots && i ? '[' + token + ']' : token;
-  }).join(dots ? '.' : '');
-}
-
-/**
- * If the array is an array and none of its elements are visitable, then it's a flat array.
- *
- * @param {Array<any>} arr - The array to check
- *
- * @returns {boolean}
- */
-function isFlatArray(arr) {
-  return utils.isArray(arr) && !arr.some(isVisitable);
-}
-
-const predicates = utils.toFlatObject(utils, {}, null, function filter(prop) {
-  return /^is[A-Z]/.test(prop);
-});
-
-/**
- * Convert a data object to FormData
- *
- * @param {Object} obj
- * @param {?Object} [formData]
- * @param {?Object} [options]
- * @param {Function} [options.visitor]
- * @param {Boolean} [options.metaTokens = true]
- * @param {Boolean} [options.dots = false]
- * @param {?Boolean} [options.indexes = false]
- *
- * @returns {Object}
- **/
-
-/**
- * It converts an object into a FormData object
- *
- * @param {Object<any, any>} obj - The object to convert to form data.
- * @param {string} formData - The FormData object to append to.
- * @param {Object<string, any>} options
- *
- * @returns
- */
-function toFormData(obj, formData, options) {
-  if (!utils.isObject(obj)) {
-    throw new TypeError('target must be an object');
-  }
-
-  // eslint-disable-next-line no-param-reassign
-  formData = formData || new (helpers_null || FormData)();
-
-  // eslint-disable-next-line no-param-reassign
-  options = utils.toFlatObject(options, {
-    metaTokens: true,
-    dots: false,
-    indexes: false
-  }, false, function defined(option, source) {
-    // eslint-disable-next-line no-eq-null,eqeqeq
-    return !utils.isUndefined(source[option]);
-  });
-
-  const metaTokens = options.metaTokens;
-  // eslint-disable-next-line no-use-before-define
-  const visitor = options.visitor || defaultVisitor;
-  const dots = options.dots;
-  const indexes = options.indexes;
-  const _Blob = options.Blob || typeof Blob !== 'undefined' && Blob;
-  const useBlob = _Blob && utils.isSpecCompliantForm(formData);
-
-  if (!utils.isFunction(visitor)) {
-    throw new TypeError('visitor must be a function');
-  }
-
-  function convertValue(value) {
-    if (value === null) return '';
-
-    if (utils.isDate(value)) {
-      return value.toISOString();
+/** Asserts something is Uint8Array. */
+function abytes(value, length, title = "") {
+    const bytes = isBytes(value);
+    const len = value?.length;
+    const needsLen = length !== undefined;
+    if (!bytes || (needsLen && len !== length)) {
+        const prefix = title && `"${title}" `;
+        const ofLen = needsLen ? ` of length ${length}` : "";
+        const got = bytes ? `length=${len}` : `type=${typeof value}`;
+        throw new Error(prefix + "expected Uint8Array" + ofLen + ", got " + got);
     }
-
-    if (utils.isBoolean(value)) {
-      return value.toString();
-    }
-
-    if (!useBlob && utils.isBlob(value)) {
-      throw new core_AxiosError('Blob is not supported. Use a Buffer instead.');
-    }
-
-    if (utils.isArrayBuffer(value) || utils.isTypedArray(value)) {
-      return useBlob && typeof Blob === 'function' ? new Blob([value]) : Buffer.from(value);
-    }
-
     return value;
-  }
-
-  /**
-   * Default visitor.
-   *
-   * @param {*} value
-   * @param {String|Number} key
-   * @param {Array<String|Number>} path
-   * @this {FormData}
-   *
-   * @returns {boolean} return true to visit the each prop of the value recursively
-   */
-  function defaultVisitor(value, key, path) {
-    let arr = value;
-
-    if (value && !path && typeof value === 'object') {
-      if (utils.endsWith(key, '{}')) {
-        // eslint-disable-next-line no-param-reassign
-        key = metaTokens ? key : key.slice(0, -2);
-        // eslint-disable-next-line no-param-reassign
-        value = JSON.stringify(value);
-      } else if (
-        (utils.isArray(value) && isFlatArray(value)) ||
-        ((utils.isFileList(value) || utils.endsWith(key, '[]')) && (arr = utils.toArray(value))
-        )) {
-        // eslint-disable-next-line no-param-reassign
-        key = removeBrackets(key);
-
-        arr.forEach(function each(el, index) {
-          !(utils.isUndefined(el) || el === null) && formData.append(
-            // eslint-disable-next-line no-nested-ternary
-            indexes === true ? renderKey([key], index, dots) : (indexes === null ? key : key + '[]'),
-            convertValue(el)
-          );
-        });
-        return false;
-      }
-    }
-
-    if (isVisitable(value)) {
-      return true;
-    }
-
-    formData.append(renderKey(path, key, dots), convertValue(value));
-
-    return false;
-  }
-
-  const stack = [];
-
-  const exposedHelpers = Object.assign(predicates, {
-    defaultVisitor,
-    convertValue,
-    isVisitable
-  });
-
-  function build(value, path) {
-    if (utils.isUndefined(value)) return;
-
-    if (stack.indexOf(value) !== -1) {
-      throw Error('Circular reference detected in ' + path.join('.'));
-    }
-
-    stack.push(value);
-
-    utils.forEach(value, function each(el, key) {
-      const result = !(utils.isUndefined(el) || el === null) && visitor.call(
-        formData, el, utils.isString(key) ? key.trim() : key, path, exposedHelpers
-      );
-
-      if (result === true) {
-        build(el, path ? path.concat(key) : [key]);
-      }
-    });
-
-    stack.pop();
-  }
-
-  if (!utils.isObject(obj)) {
-    throw new TypeError('data must be an object');
-  }
-
-  build(obj);
-
-  return formData;
 }
-
-/* harmony default export */ const helpers_toFormData = (toFormData);
-
-;// ./node_modules/axios/lib/helpers/AxiosURLSearchParams.js
-
-
-
-
-/**
- * It encodes a string by replacing all characters that are not in the unreserved set with
- * their percent-encoded equivalents
- *
- * @param {string} str - The string to encode.
- *
- * @returns {string} The encoded string.
- */
-function encode(str) {
-  const charMap = {
-    '!': '%21',
-    "'": '%27',
-    '(': '%28',
-    ')': '%29',
-    '~': '%7E',
-    '%20': '+',
-    '%00': '\x00'
-  };
-  return encodeURIComponent(str).replace(/[!'()~]|%20|%00/g, function replacer(match) {
-    return charMap[match];
-  });
+/** Asserts a hash instance has not been destroyed / finished */
+function aexists(instance, checkFinished = true) {
+    if (instance.destroyed)
+        throw new Error("Hash instance has been destroyed");
+    if (checkFinished && instance.finished) {
+        throw new Error("Hash#digest() has already been called");
+    }
 }
-
-/**
- * It takes a params object and converts it to a FormData object
- *
- * @param {Object<string, any>} params - The parameters to be converted to a FormData object.
- * @param {Object<string, any>} options - The options object passed to the Axios constructor.
- *
- * @returns {void}
- */
-function AxiosURLSearchParams(params, options) {
-  this._pairs = [];
-
-  params && helpers_toFormData(params, this, options);
+/** Asserts output is properly-sized byte array */
+function aoutput(out, instance) {
+    abytes(out, undefined, "digestInto() output");
+    const min = instance.outputLen;
+    if (out.length < min) {
+        throw new Error('"digestInto() output" expected to be of length >=' + min);
+    }
 }
-
-const AxiosURLSearchParams_prototype = AxiosURLSearchParams.prototype;
-
-AxiosURLSearchParams_prototype.append = function append(name, value) {
-  this._pairs.push([name, value]);
-};
-
-AxiosURLSearchParams_prototype.toString = function toString(encoder) {
-  const _encode = encoder ? function(value) {
-    return encoder.call(this, value, encode);
-  } : encode;
-
-  return this._pairs.map(function each(pair) {
-    return _encode(pair[0]) + '=' + _encode(pair[1]);
-  }, '').join('&');
-};
-
-/* harmony default export */ const helpers_AxiosURLSearchParams = (AxiosURLSearchParams);
-
-;// ./node_modules/axios/lib/helpers/buildURL.js
-
-
-
-
-
-/**
- * It replaces all instances of the characters `:`, `$`, `,`, `+`, `[`, and `]` with their
- * URI encoded counterparts
- *
- * @param {string} val The value to be encoded.
- *
- * @returns {string} The encoded value.
- */
-function buildURL_encode(val) {
-  return encodeURIComponent(val).
-    replace(/%3A/gi, ':').
-    replace(/%24/g, '$').
-    replace(/%2C/gi, ',').
-    replace(/%20/g, '+').
-    replace(/%5B/gi, '[').
-    replace(/%5D/gi, ']');
+/** Cast u8 / u16 / u32 to u32. */
+function u32(arr) {
+    return new Uint32Array(arr.buffer, arr.byteOffset, Math.floor(arr.byteLength / 4));
 }
-
-/**
- * Build a URL by appending params to the end
- *
- * @param {string} url The base of the url (e.g., http://www.google.com)
- * @param {object} [params] The params to be appended
- * @param {?(object|Function)} options
- *
- * @returns {string} The formatted url
- */
-function buildURL(url, params, options) {
-  /*eslint no-param-reassign:0*/
-  if (!params) {
-    return url;
-  }
-  
-  const _encode = options && options.encode || buildURL_encode;
-
-  if (utils.isFunction(options)) {
-    options = {
-      serialize: options
-    };
-  } 
-
-  const serializeFn = options && options.serialize;
-
-  let serializedParams;
-
-  if (serializeFn) {
-    serializedParams = serializeFn(params, options);
-  } else {
-    serializedParams = utils.isURLSearchParams(params) ?
-      params.toString() :
-      new helpers_AxiosURLSearchParams(params, options).toString(_encode);
-  }
-
-  if (serializedParams) {
-    const hashmarkIndex = url.indexOf("#");
-
-    if (hashmarkIndex !== -1) {
-      url = url.slice(0, hashmarkIndex);
+/** Zeroize a byte array. Warning: JS provides no guarantees. */
+function clean(...arrays) {
+    for (let i = 0; i < arrays.length; i++) {
+        arrays[i].fill(0);
     }
-    url += (url.indexOf('?') === -1 ? '?' : '&') + serializedParams;
-  }
-
-  return url;
 }
-
-;// ./node_modules/axios/lib/core/InterceptorManager.js
-
-
-
-
-class InterceptorManager {
-  constructor() {
-    this.handlers = [];
-  }
-
-  /**
-   * Add a new interceptor to the stack
-   *
-   * @param {Function} fulfilled The function to handle `then` for a `Promise`
-   * @param {Function} rejected The function to handle `reject` for a `Promise`
-   *
-   * @return {Number} An ID used to remove interceptor later
-   */
-  use(fulfilled, rejected, options) {
-    this.handlers.push({
-      fulfilled,
-      rejected,
-      synchronous: options ? options.synchronous : false,
-      runWhen: options ? options.runWhen : null
-    });
-    return this.handlers.length - 1;
-  }
-
-  /**
-   * Remove an interceptor from the stack
-   *
-   * @param {Number} id The ID that was returned by `use`
-   *
-   * @returns {Boolean} `true` if the interceptor was removed, `false` otherwise
-   */
-  eject(id) {
-    if (this.handlers[id]) {
-      this.handlers[id] = null;
-    }
-  }
-
-  /**
-   * Clear all interceptors from the stack
-   *
-   * @returns {void}
-   */
-  clear() {
-    if (this.handlers) {
-      this.handlers = [];
-    }
-  }
-
-  /**
-   * Iterate over all the registered interceptors
-   *
-   * This method is particularly useful for skipping over any
-   * interceptors that may have become `null` calling `eject`.
-   *
-   * @param {Function} fn The function to call for each interceptor
-   *
-   * @returns {void}
-   */
-  forEach(fn) {
-    utils.forEach(this.handlers, function forEachHandler(h) {
-      if (h !== null) {
-        fn(h);
-      }
-    });
-  }
+/** Is current platform little-endian? Most are. Big-Endian platform: IBM */
+const isLE = 
+/* @__PURE__ */ (() => new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44)();
+/** The byte swap operation for uint32 */
+function byteSwap(word) {
+    return (((word << 24) & 0xff000000) |
+        ((word << 8) & 0xff0000) |
+        ((word >>> 8) & 0xff00) |
+        ((word >>> 24) & 0xff));
 }
-
-/* harmony default export */ const core_InterceptorManager = (InterceptorManager);
-
-;// ./node_modules/axios/lib/defaults/transitional.js
-
-
-/* harmony default export */ const defaults_transitional = ({
-  silentJSONParsing: true,
-  forcedJSONParsing: true,
-  clarifyTimeoutError: false
-});
-
-;// ./node_modules/axios/lib/platform/browser/classes/URLSearchParams.js
-
-
-
-/* harmony default export */ const classes_URLSearchParams = (typeof URLSearchParams !== 'undefined' ? URLSearchParams : helpers_AxiosURLSearchParams);
-
-;// ./node_modules/axios/lib/platform/browser/classes/FormData.js
-
-
-/* harmony default export */ const classes_FormData = (typeof FormData !== 'undefined' ? FormData : null);
-
-;// ./node_modules/axios/lib/platform/browser/classes/Blob.js
-
-
-/* harmony default export */ const classes_Blob = (typeof Blob !== 'undefined' ? Blob : null);
-
-;// ./node_modules/axios/lib/platform/browser/index.js
-
-
-
-
-/* harmony default export */ const browser = ({
-  isBrowser: true,
-  classes: {
-    URLSearchParams: classes_URLSearchParams,
-    FormData: classes_FormData,
-    Blob: classes_Blob
-  },
-  protocols: ['http', 'https', 'file', 'blob', 'url', 'data']
-});
-
-;// ./node_modules/axios/lib/platform/common/utils.js
-const hasBrowserEnv = typeof window !== 'undefined' && typeof document !== 'undefined';
-
-const _navigator = typeof navigator === 'object' && navigator || undefined;
-
-/**
- * Determine if we're running in a standard browser environment
- *
- * This allows axios to run in a web worker, and react-native.
- * Both environments support XMLHttpRequest, but not fully standard globals.
- *
- * web workers:
- *  typeof window -> undefined
- *  typeof document -> undefined
- *
- * react-native:
- *  navigator.product -> 'ReactNative'
- * nativescript
- *  navigator.product -> 'NativeScript' or 'NS'
- *
- * @returns {boolean}
- */
-const hasStandardBrowserEnv = hasBrowserEnv &&
-  (!_navigator || ['ReactNative', 'NativeScript', 'NS'].indexOf(_navigator.product) < 0);
-
-/**
- * Determine if we're running in a standard browser webWorker environment
- *
- * Although the `isStandardBrowserEnv` method indicates that
- * `allows axios to run in a web worker`, the WebWorker will still be
- * filtered out due to its judgment standard
- * `typeof window !== 'undefined' && typeof document !== 'undefined'`.
- * This leads to a problem when axios post `FormData` in webWorker
- */
-const hasStandardBrowserWebWorkerEnv = (() => {
-  return (
-    typeof WorkerGlobalScope !== 'undefined' &&
-    // eslint-disable-next-line no-undef
-    self instanceof WorkerGlobalScope &&
-    typeof self.importScripts === 'function'
-  );
-})();
-
-const origin = hasBrowserEnv && window.location.href || 'http://localhost';
-
-
-
-;// ./node_modules/axios/lib/platform/index.js
-
-
-
-/* harmony default export */ const platform = ({
-  ...common_utils_namespaceObject,
-  ...browser
-});
-
-;// ./node_modules/axios/lib/helpers/toURLEncodedForm.js
-
-
-
-
-
-
-function toURLEncodedForm(data, options) {
-  return helpers_toFormData(data, new platform.classes.URLSearchParams(), Object.assign({
-    visitor: function(value, key, path, helpers) {
-      if (platform.isNode && utils.isBuffer(value)) {
-        this.append(key, value.toString('base64'));
-        return false;
-      }
-
-      return helpers.defaultVisitor.apply(this, arguments);
+/** Conditionally byte swap if on a big-endian platform */
+const swap8IfBE = (/* unused pure expression or super */ null && (isLE
+    ? (n) => n
+    : (n) => byteSwap(n)));
+/** @deprecated */
+const byteSwapIfBE = (/* unused pure expression or super */ null && (swap8IfBE));
+/** In place byte swap for Uint32Array */
+function byteSwap32(arr) {
+    for (let i = 0; i < arr.length; i++) {
+        arr[i] = byteSwap(arr[i]);
     }
-  }, options));
+    return arr;
 }
-
-;// ./node_modules/axios/lib/helpers/formDataToJSON.js
-
-
-
-
-/**
- * It takes a string like `foo[x][y][z]` and returns an array like `['foo', 'x', 'y', 'z']
- *
- * @param {string} name - The name of the property to get.
- *
- * @returns An array of strings.
- */
-function parsePropPath(name) {
-  // foo[x][y][z]
-  // foo.x.y.z
-  // foo-x-y-z
-  // foo x y z
-  return utils.matchAll(/\w+|\[(\w*)]/g, name).map(match => {
-    return match[0] === '[]' ? '' : match[1] || match[0];
-  });
-}
-
-/**
- * Convert an array to an object.
- *
- * @param {Array<any>} arr - The array to convert to an object.
- *
- * @returns An object with the same keys and values as the array.
- */
-function arrayToObject(arr) {
-  const obj = {};
-  const keys = Object.keys(arr);
-  let i;
-  const len = keys.length;
-  let key;
-  for (i = 0; i < len; i++) {
-    key = keys[i];
-    obj[key] = arr[key];
-  }
-  return obj;
-}
-
-/**
- * It takes a FormData object and returns a JavaScript object
- *
- * @param {string} formData The FormData object to convert to JSON.
- *
- * @returns {Object<string, any> | null} The converted object.
- */
-function formDataToJSON(formData) {
-  function buildPath(path, value, target, index) {
-    let name = path[index++];
-
-    if (name === '__proto__') return true;
-
-    const isNumericKey = Number.isFinite(+name);
-    const isLast = index >= path.length;
-    name = !name && utils.isArray(target) ? target.length : name;
-
-    if (isLast) {
-      if (utils.hasOwnProp(target, name)) {
-        target[name] = [target[name], value];
-      } else {
-        target[name] = value;
-      }
-
-      return !isNumericKey;
-    }
-
-    if (!target[name] || !utils.isObject(target[name])) {
-      target[name] = [];
-    }
-
-    const result = buildPath(path, value, target[name], index);
-
-    if (result && utils.isArray(target[name])) {
-      target[name] = arrayToObject(target[name]);
-    }
-
-    return !isNumericKey;
-  }
-
-  if (utils.isFormData(formData) && utils.isFunction(formData.entries)) {
-    const obj = {};
-
-    utils.forEachEntry(formData, (name, value) => {
-      buildPath(parsePropPath(name), value, obj, 0);
-    });
-
-    return obj;
-  }
-
-  return null;
-}
-
-/* harmony default export */ const helpers_formDataToJSON = (formDataToJSON);
-
-;// ./node_modules/axios/lib/defaults/index.js
-
-
-
-
-
-
-
-
-
-
-/**
- * It takes a string, tries to parse it, and if it fails, it returns the stringified version
- * of the input
- *
- * @param {any} rawValue - The value to be stringified.
- * @param {Function} parser - A function that parses a string into a JavaScript object.
- * @param {Function} encoder - A function that takes a value and returns a string.
- *
- * @returns {string} A stringified version of the rawValue.
- */
-function stringifySafely(rawValue, parser, encoder) {
-  if (utils.isString(rawValue)) {
-    try {
-      (parser || JSON.parse)(rawValue);
-      return utils.trim(rawValue);
-    } catch (e) {
-      if (e.name !== 'SyntaxError') {
-        throw e;
-      }
-    }
-  }
-
-  return (encoder || JSON.stringify)(rawValue);
-}
-
-const defaults = {
-
-  transitional: defaults_transitional,
-
-  adapter: ['xhr', 'http', 'fetch'],
-
-  transformRequest: [function transformRequest(data, headers) {
-    const contentType = headers.getContentType() || '';
-    const hasJSONContentType = contentType.indexOf('application/json') > -1;
-    const isObjectPayload = utils.isObject(data);
-
-    if (isObjectPayload && utils.isHTMLForm(data)) {
-      data = new FormData(data);
-    }
-
-    const isFormData = utils.isFormData(data);
-
-    if (isFormData) {
-      return hasJSONContentType ? JSON.stringify(helpers_formDataToJSON(data)) : data;
-    }
-
-    if (utils.isArrayBuffer(data) ||
-      utils.isBuffer(data) ||
-      utils.isStream(data) ||
-      utils.isFile(data) ||
-      utils.isBlob(data) ||
-      utils.isReadableStream(data)
-    ) {
-      return data;
-    }
-    if (utils.isArrayBufferView(data)) {
-      return data.buffer;
-    }
-    if (utils.isURLSearchParams(data)) {
-      headers.setContentType('application/x-www-form-urlencoded;charset=utf-8', false);
-      return data.toString();
-    }
-
-    let isFileList;
-
-    if (isObjectPayload) {
-      if (contentType.indexOf('application/x-www-form-urlencoded') > -1) {
-        return toURLEncodedForm(data, this.formSerializer).toString();
-      }
-
-      if ((isFileList = utils.isFileList(data)) || contentType.indexOf('multipart/form-data') > -1) {
-        const _FormData = this.env && this.env.FormData;
-
-        return helpers_toFormData(
-          isFileList ? {'files[]': data} : data,
-          _FormData && new _FormData(),
-          this.formSerializer
-        );
-      }
-    }
-
-    if (isObjectPayload || hasJSONContentType ) {
-      headers.setContentType('application/json', false);
-      return stringifySafely(data);
-    }
-
-    return data;
-  }],
-
-  transformResponse: [function transformResponse(data) {
-    const transitional = this.transitional || defaults.transitional;
-    const forcedJSONParsing = transitional && transitional.forcedJSONParsing;
-    const JSONRequested = this.responseType === 'json';
-
-    if (utils.isResponse(data) || utils.isReadableStream(data)) {
-      return data;
-    }
-
-    if (data && utils.isString(data) && ((forcedJSONParsing && !this.responseType) || JSONRequested)) {
-      const silentJSONParsing = transitional && transitional.silentJSONParsing;
-      const strictJSONParsing = !silentJSONParsing && JSONRequested;
-
-      try {
-        return JSON.parse(data);
-      } catch (e) {
-        if (strictJSONParsing) {
-          if (e.name === 'SyntaxError') {
-            throw core_AxiosError.from(e, core_AxiosError.ERR_BAD_RESPONSE, this, null, this.response);
-          }
-          throw e;
-        }
-      }
-    }
-
-    return data;
-  }],
-
-  /**
-   * A timeout in milliseconds to abort a request. If set to 0 (default) a
-   * timeout is not created.
-   */
-  timeout: 0,
-
-  xsrfCookieName: 'XSRF-TOKEN',
-  xsrfHeaderName: 'X-XSRF-TOKEN',
-
-  maxContentLength: -1,
-  maxBodyLength: -1,
-
-  env: {
-    FormData: platform.classes.FormData,
-    Blob: platform.classes.Blob
-  },
-
-  validateStatus: function validateStatus(status) {
-    return status >= 200 && status < 300;
-  },
-
-  headers: {
-    common: {
-      'Accept': 'application/json, text/plain, */*',
-      'Content-Type': undefined
-    }
-  }
-};
-
-utils.forEach(['delete', 'get', 'head', 'post', 'put', 'patch'], (method) => {
-  defaults.headers[method] = {};
-});
-
-/* harmony default export */ const lib_defaults = (defaults);
-
-;// ./node_modules/axios/lib/helpers/parseHeaders.js
-
-
-
-
-// RawAxiosHeaders whose duplicates are ignored by node
-// c.f. https://nodejs.org/api/http.html#http_message_headers
-const ignoreDuplicateOf = utils.toObjectSet([
-  'age', 'authorization', 'content-length', 'content-type', 'etag',
-  'expires', 'from', 'host', 'if-modified-since', 'if-unmodified-since',
-  'last-modified', 'location', 'max-forwards', 'proxy-authorization',
-  'referer', 'retry-after', 'user-agent'
-]);
-
-/**
- * Parse headers into an object
- *
- * ```
- * Date: Wed, 27 Aug 2014 08:58:49 GMT
- * Content-Type: application/json
- * Connection: keep-alive
- * Transfer-Encoding: chunked
- * ```
- *
- * @param {String} rawHeaders Headers needing to be parsed
- *
- * @returns {Object} Headers parsed into an object
- */
-/* harmony default export */ const parseHeaders = (rawHeaders => {
-  const parsed = {};
-  let key;
-  let val;
-  let i;
-
-  rawHeaders && rawHeaders.split('\n').forEach(function parser(line) {
-    i = line.indexOf(':');
-    key = line.substring(0, i).trim().toLowerCase();
-    val = line.substring(i + 1).trim();
-
-    if (!key || (parsed[key] && ignoreDuplicateOf[key])) {
-      return;
-    }
-
-    if (key === 'set-cookie') {
-      if (parsed[key]) {
-        parsed[key].push(val);
-      } else {
-        parsed[key] = [val];
-      }
-    } else {
-      parsed[key] = parsed[key] ? parsed[key] + ', ' + val : val;
-    }
-  });
-
-  return parsed;
-});
-
-;// ./node_modules/axios/lib/core/AxiosHeaders.js
-
-
-
-
-
-const $internals = Symbol('internals');
-
-function normalizeHeader(header) {
-  return header && String(header).trim().toLowerCase();
-}
-
-function normalizeValue(value) {
-  if (value === false || value == null) {
-    return value;
-  }
-
-  return utils.isArray(value) ? value.map(normalizeValue) : String(value);
-}
-
-function parseTokens(str) {
-  const tokens = Object.create(null);
-  const tokensRE = /([^\s,;=]+)\s*(?:=\s*([^,;]+))?/g;
-  let match;
-
-  while ((match = tokensRE.exec(str))) {
-    tokens[match[1]] = match[2];
-  }
-
-  return tokens;
-}
-
-const isValidHeaderName = (str) => /^[-_a-zA-Z0-9^`|~,!#$%&'*+.]+$/.test(str.trim());
-
-function matchHeaderValue(context, value, header, filter, isHeaderNameFilter) {
-  if (utils.isFunction(filter)) {
-    return filter.call(this, value, header);
-  }
-
-  if (isHeaderNameFilter) {
-    value = header;
-  }
-
-  if (!utils.isString(value)) return;
-
-  if (utils.isString(filter)) {
-    return value.indexOf(filter) !== -1;
-  }
-
-  if (utils.isRegExp(filter)) {
-    return filter.test(value);
-  }
-}
-
-function formatHeader(header) {
-  return header.trim()
-    .toLowerCase().replace(/([a-z\d])(\w*)/g, (w, char, str) => {
-      return char.toUpperCase() + str;
-    });
-}
-
-function buildAccessors(obj, header) {
-  const accessorName = utils.toCamelCase(' ' + header);
-
-  ['get', 'set', 'has'].forEach(methodName => {
-    Object.defineProperty(obj, methodName + accessorName, {
-      value: function(arg1, arg2, arg3) {
-        return this[methodName].call(this, header, arg1, arg2, arg3);
-      },
-      configurable: true
-    });
-  });
-}
-
-class AxiosHeaders {
-  constructor(headers) {
-    headers && this.set(headers);
-  }
-
-  set(header, valueOrRewrite, rewrite) {
-    const self = this;
-
-    function setHeader(_value, _header, _rewrite) {
-      const lHeader = normalizeHeader(_header);
-
-      if (!lHeader) {
-        throw new Error('header name must be a non-empty string');
-      }
-
-      const key = utils.findKey(self, lHeader);
-
-      if(!key || self[key] === undefined || _rewrite === true || (_rewrite === undefined && self[key] !== false)) {
-        self[key || _header] = normalizeValue(_value);
-      }
-    }
-
-    const setHeaders = (headers, _rewrite) =>
-      utils.forEach(headers, (_value, _header) => setHeader(_value, _header, _rewrite));
-
-    if (utils.isPlainObject(header) || header instanceof this.constructor) {
-      setHeaders(header, valueOrRewrite)
-    } else if(utils.isString(header) && (header = header.trim()) && !isValidHeaderName(header)) {
-      setHeaders(parseHeaders(header), valueOrRewrite);
-    } else if (utils.isObject(header) && utils.isIterable(header)) {
-      let obj = {}, dest, key;
-      for (const entry of header) {
-        if (!utils.isArray(entry)) {
-          throw TypeError('Object iterator must return a key-value pair');
-        }
-
-        obj[key = entry[0]] = (dest = obj[key]) ?
-          (utils.isArray(dest) ? [...dest, entry[1]] : [dest, entry[1]]) : entry[1];
-      }
-
-      setHeaders(obj, valueOrRewrite)
-    } else {
-      header != null && setHeader(valueOrRewrite, header, rewrite);
-    }
-
-    return this;
-  }
-
-  get(header, parser) {
-    header = normalizeHeader(header);
-
-    if (header) {
-      const key = utils.findKey(this, header);
-
-      if (key) {
-        const value = this[key];
-
-        if (!parser) {
-          return value;
-        }
-
-        if (parser === true) {
-          return parseTokens(value);
-        }
-
-        if (utils.isFunction(parser)) {
-          return parser.call(this, value, key);
-        }
-
-        if (utils.isRegExp(parser)) {
-          return parser.exec(value);
-        }
-
-        throw new TypeError('parser must be boolean|regexp|function');
-      }
-    }
-  }
-
-  has(header, matcher) {
-    header = normalizeHeader(header);
-
-    if (header) {
-      const key = utils.findKey(this, header);
-
-      return !!(key && this[key] !== undefined && (!matcher || matchHeaderValue(this, this[key], key, matcher)));
-    }
-
-    return false;
-  }
-
-  delete(header, matcher) {
-    const self = this;
-    let deleted = false;
-
-    function deleteHeader(_header) {
-      _header = normalizeHeader(_header);
-
-      if (_header) {
-        const key = utils.findKey(self, _header);
-
-        if (key && (!matcher || matchHeaderValue(self, self[key], key, matcher))) {
-          delete self[key];
-
-          deleted = true;
-        }
-      }
-    }
-
-    if (utils.isArray(header)) {
-      header.forEach(deleteHeader);
-    } else {
-      deleteHeader(header);
-    }
-
-    return deleted;
-  }
-
-  clear(matcher) {
-    const keys = Object.keys(this);
-    let i = keys.length;
-    let deleted = false;
-
-    while (i--) {
-      const key = keys[i];
-      if(!matcher || matchHeaderValue(this, this[key], key, matcher, true)) {
-        delete this[key];
-        deleted = true;
-      }
-    }
-
-    return deleted;
-  }
-
-  normalize(format) {
-    const self = this;
-    const headers = {};
-
-    utils.forEach(this, (value, header) => {
-      const key = utils.findKey(headers, header);
-
-      if (key) {
-        self[key] = normalizeValue(value);
-        delete self[header];
-        return;
-      }
-
-      const normalized = format ? formatHeader(header) : String(header).trim();
-
-      if (normalized !== header) {
-        delete self[header];
-      }
-
-      self[normalized] = normalizeValue(value);
-
-      headers[normalized] = true;
-    });
-
-    return this;
-  }
-
-  concat(...targets) {
-    return this.constructor.concat(this, ...targets);
-  }
-
-  toJSON(asStrings) {
-    const obj = Object.create(null);
-
-    utils.forEach(this, (value, header) => {
-      value != null && value !== false && (obj[header] = asStrings && utils.isArray(value) ? value.join(', ') : value);
-    });
-
-    return obj;
-  }
-
-  [Symbol.iterator]() {
-    return Object.entries(this.toJSON())[Symbol.iterator]();
-  }
-
-  toString() {
-    return Object.entries(this.toJSON()).map(([header, value]) => header + ': ' + value).join('\n');
-  }
-
-  getSetCookie() {
-    return this.get("set-cookie") || [];
-  }
-
-  get [Symbol.toStringTag]() {
-    return 'AxiosHeaders';
-  }
-
-  static from(thing) {
-    return thing instanceof this ? thing : new this(thing);
-  }
-
-  static concat(first, ...targets) {
-    const computed = new this(first);
-
-    targets.forEach((target) => computed.set(target));
-
-    return computed;
-  }
-
-  static accessor(header) {
-    const internals = this[$internals] = (this[$internals] = {
-      accessors: {}
-    });
-
-    const accessors = internals.accessors;
-    const prototype = this.prototype;
-
-    function defineAccessor(_header) {
-      const lHeader = normalizeHeader(_header);
-
-      if (!accessors[lHeader]) {
-        buildAccessors(prototype, _header);
-        accessors[lHeader] = true;
-      }
-    }
-
-    utils.isArray(header) ? header.forEach(defineAccessor) : defineAccessor(header);
-
-    return this;
-  }
-}
-
-AxiosHeaders.accessor(['Content-Type', 'Content-Length', 'Accept', 'Accept-Encoding', 'User-Agent', 'Authorization']);
-
-// reserved names hotfix
-utils.reduceDescriptors(AxiosHeaders.prototype, ({value}, key) => {
-  let mapped = key[0].toUpperCase() + key.slice(1); // map `set` => `Set`
-  return {
-    get: () => value,
-    set(headerValue) {
-      this[mapped] = headerValue;
-    }
-  }
-});
-
-utils.freezeMethods(AxiosHeaders);
-
-/* harmony default export */ const core_AxiosHeaders = (AxiosHeaders);
-
-;// ./node_modules/axios/lib/core/transformData.js
-
-
-
-
-
-
-/**
- * Transform the data for a request or a response
- *
- * @param {Array|Function} fns A single function or Array of functions
- * @param {?Object} response The response object
- *
- * @returns {*} The resulting transformed data
- */
-function transformData(fns, response) {
-  const config = this || lib_defaults;
-  const context = response || config;
-  const headers = core_AxiosHeaders.from(context.headers);
-  let data = context.data;
-
-  utils.forEach(fns, function transform(fn) {
-    data = fn.call(config, data, headers.normalize(), response ? response.status : undefined);
-  });
-
-  headers.normalize();
-
-  return data;
-}
-
-;// ./node_modules/axios/lib/cancel/isCancel.js
-
-
-function isCancel(value) {
-  return !!(value && value.__CANCEL__);
-}
-
-;// ./node_modules/axios/lib/cancel/CanceledError.js
-
-
-
-
-
-/**
- * A `CanceledError` is an object that is thrown when an operation is canceled.
- *
- * @param {string=} message The message.
- * @param {Object=} config The config.
- * @param {Object=} request The request.
- *
- * @returns {CanceledError} The created error.
- */
-function CanceledError(message, config, request) {
-  // eslint-disable-next-line no-eq-null,eqeqeq
-  core_AxiosError.call(this, message == null ? 'canceled' : message, core_AxiosError.ERR_CANCELED, config, request);
-  this.name = 'CanceledError';
-}
-
-utils.inherits(CanceledError, core_AxiosError, {
-  __CANCEL__: true
-});
-
-/* harmony default export */ const cancel_CanceledError = (CanceledError);
-
-;// ./node_modules/axios/lib/core/settle.js
-
-
-
-
-/**
- * Resolve or reject a Promise based on response status.
- *
- * @param {Function} resolve A function that resolves the promise.
- * @param {Function} reject A function that rejects the promise.
- * @param {object} response The response.
- *
- * @returns {object} The response.
- */
-function settle(resolve, reject, response) {
-  const validateStatus = response.config.validateStatus;
-  if (!response.status || !validateStatus || validateStatus(response.status)) {
-    resolve(response);
-  } else {
-    reject(new core_AxiosError(
-      'Request failed with status code ' + response.status,
-      [core_AxiosError.ERR_BAD_REQUEST, core_AxiosError.ERR_BAD_RESPONSE][Math.floor(response.status / 100) - 4],
-      response.config,
-      response.request,
-      response
-    ));
-  }
-}
-
-;// ./node_modules/axios/lib/helpers/parseProtocol.js
-
-
-function parseProtocol(url) {
-  const match = /^([-+\w]{1,25})(:?\/\/|:)/.exec(url);
-  return match && match[1] || '';
-}
-
-;// ./node_modules/axios/lib/helpers/speedometer.js
-
-
-/**
- * Calculate data maxRate
- * @param {Number} [samplesCount= 10]
- * @param {Number} [min= 1000]
- * @returns {Function}
- */
-function speedometer(samplesCount, min) {
-  samplesCount = samplesCount || 10;
-  const bytes = new Array(samplesCount);
-  const timestamps = new Array(samplesCount);
-  let head = 0;
-  let tail = 0;
-  let firstSampleTS;
-
-  min = min !== undefined ? min : 1000;
-
-  return function push(chunkLength) {
-    const now = Date.now();
-
-    const startedAt = timestamps[tail];
-
-    if (!firstSampleTS) {
-      firstSampleTS = now;
-    }
-
-    bytes[head] = chunkLength;
-    timestamps[head] = now;
-
-    let i = tail;
-    let bytesCount = 0;
-
-    while (i !== head) {
-      bytesCount += bytes[i++];
-      i = i % samplesCount;
-    }
-
-    head = (head + 1) % samplesCount;
-
-    if (head === tail) {
-      tail = (tail + 1) % samplesCount;
-    }
-
-    if (now - firstSampleTS < min) {
-      return;
-    }
-
-    const passed = startedAt && now - startedAt;
-
-    return passed ? Math.round(bytesCount * 1000 / passed) : undefined;
-  };
-}
-
-/* harmony default export */ const helpers_speedometer = (speedometer);
-
-;// ./node_modules/axios/lib/helpers/throttle.js
-/**
- * Throttle decorator
- * @param {Function} fn
- * @param {Number} freq
- * @return {Function}
- */
-function throttle(fn, freq) {
-  let timestamp = 0;
-  let threshold = 1000 / freq;
-  let lastArgs;
-  let timer;
-
-  const invoke = (args, now = Date.now()) => {
-    timestamp = now;
-    lastArgs = null;
-    if (timer) {
-      clearTimeout(timer);
-      timer = null;
-    }
-    fn.apply(null, args);
-  }
-
-  const throttled = (...args) => {
-    const now = Date.now();
-    const passed = now - timestamp;
-    if ( passed >= threshold) {
-      invoke(args, now);
-    } else {
-      lastArgs = args;
-      if (!timer) {
-        timer = setTimeout(() => {
-          timer = null;
-          invoke(lastArgs)
-        }, threshold - passed);
-      }
-    }
-  }
-
-  const flush = () => lastArgs && invoke(lastArgs);
-
-  return [throttled, flush];
-}
-
-/* harmony default export */ const helpers_throttle = (throttle);
-
-;// ./node_modules/axios/lib/helpers/progressEventReducer.js
-
-
-
-
-const progressEventReducer = (listener, isDownloadStream, freq = 3) => {
-  let bytesNotified = 0;
-  const _speedometer = helpers_speedometer(50, 250);
-
-  return helpers_throttle(e => {
-    const loaded = e.loaded;
-    const total = e.lengthComputable ? e.total : undefined;
-    const progressBytes = loaded - bytesNotified;
-    const rate = _speedometer(progressBytes);
-    const inRange = loaded <= total;
-
-    bytesNotified = loaded;
-
-    const data = {
-      loaded,
-      total,
-      progress: total ? (loaded / total) : undefined,
-      bytes: progressBytes,
-      rate: rate ? rate : undefined,
-      estimated: rate && total && inRange ? (total - loaded) / rate : undefined,
-      event: e,
-      lengthComputable: total != null,
-      [isDownloadStream ? 'download' : 'upload']: true
-    };
-
-    listener(data);
-  }, freq);
-}
-
-const progressEventDecorator = (total, throttled) => {
-  const lengthComputable = total != null;
-
-  return [(loaded) => throttled[0]({
-    lengthComputable,
-    total,
-    loaded
-  }), throttled[1]];
-}
-
-const asyncDecorator = (fn) => (...args) => utils.asap(() => fn(...args));
-
-;// ./node_modules/axios/lib/helpers/isURLSameOrigin.js
-
-
-/* harmony default export */ const isURLSameOrigin = (platform.hasStandardBrowserEnv ? ((origin, isMSIE) => (url) => {
-  url = new URL(url, platform.origin);
-
-  return (
-    origin.protocol === url.protocol &&
-    origin.host === url.host &&
-    (isMSIE || origin.port === url.port)
-  );
-})(
-  new URL(platform.origin),
-  platform.navigator && /(msie|trident)/i.test(platform.navigator.userAgent)
-) : () => true);
-
-;// ./node_modules/axios/lib/helpers/cookies.js
-
-
-
-/* harmony default export */ const cookies = (platform.hasStandardBrowserEnv ?
-
-  // Standard browser envs support document.cookie
-  {
-    write(name, value, expires, path, domain, secure) {
-      const cookie = [name + '=' + encodeURIComponent(value)];
-
-      utils.isNumber(expires) && cookie.push('expires=' + new Date(expires).toGMTString());
-
-      utils.isString(path) && cookie.push('path=' + path);
-
-      utils.isString(domain) && cookie.push('domain=' + domain);
-
-      secure === true && cookie.push('secure');
-
-      document.cookie = cookie.join('; ');
-    },
-
-    read(name) {
-      const match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
-      return (match ? decodeURIComponent(match[3]) : null);
-    },
-
-    remove(name) {
-      this.write(name, '', Date.now() - 86400000);
-    }
-  }
-
-  :
-
-  // Non-standard browser env (web workers, react-native) lack needed support.
-  {
-    write() {},
-    read() {
-      return null;
-    },
-    remove() {}
-  });
-
-
-;// ./node_modules/axios/lib/helpers/isAbsoluteURL.js
-
-
-/**
- * Determines whether the specified URL is absolute
- *
- * @param {string} url The URL to test
- *
- * @returns {boolean} True if the specified URL is absolute, otherwise false
- */
-function isAbsoluteURL(url) {
-  // A URL is considered absolute if it begins with "<scheme>://" or "//" (protocol-relative URL).
-  // RFC 3986 defines scheme name as a sequence of characters beginning with a letter and followed
-  // by any combination of letters, digits, plus, period, or hyphen.
-  return /^([a-z][a-z\d+\-.]*:)?\/\//i.test(url);
-}
-
-;// ./node_modules/axios/lib/helpers/combineURLs.js
-
-
-/**
- * Creates a new URL by combining the specified URLs
- *
- * @param {string} baseURL The base URL
- * @param {string} relativeURL The relative URL
- *
- * @returns {string} The combined URL
- */
-function combineURLs(baseURL, relativeURL) {
-  return relativeURL
-    ? baseURL.replace(/\/?\/$/, '') + '/' + relativeURL.replace(/^\/+/, '')
-    : baseURL;
-}
-
-;// ./node_modules/axios/lib/core/buildFullPath.js
-
-
-
-
-
-/**
- * Creates a new URL by combining the baseURL with the requestedURL,
- * only when the requestedURL is not already an absolute URL.
- * If the requestURL is absolute, this function returns the requestedURL untouched.
- *
- * @param {string} baseURL The base URL
- * @param {string} requestedURL Absolute or relative URL to combine
- *
- * @returns {string} The combined full path
- */
-function buildFullPath(baseURL, requestedURL, allowAbsoluteUrls) {
-  let isRelativeUrl = !isAbsoluteURL(requestedURL);
-  if (baseURL && (isRelativeUrl || allowAbsoluteUrls == false)) {
-    return combineURLs(baseURL, requestedURL);
-  }
-  return requestedURL;
-}
-
-;// ./node_modules/axios/lib/core/mergeConfig.js
-
-
-
-
-
-const headersToObject = (thing) => thing instanceof core_AxiosHeaders ? { ...thing } : thing;
-
-/**
- * Config-specific merge-function which creates a new config-object
- * by merging two configuration objects together.
- *
- * @param {Object} config1
- * @param {Object} config2
- *
- * @returns {Object} New object resulting from merging config2 to config1
- */
-function mergeConfig(config1, config2) {
-  // eslint-disable-next-line no-param-reassign
-  config2 = config2 || {};
-  const config = {};
-
-  function getMergedValue(target, source, prop, caseless) {
-    if (utils.isPlainObject(target) && utils.isPlainObject(source)) {
-      return utils.merge.call({caseless}, target, source);
-    } else if (utils.isPlainObject(source)) {
-      return utils.merge({}, source);
-    } else if (utils.isArray(source)) {
-      return source.slice();
-    }
-    return source;
-  }
-
-  // eslint-disable-next-line consistent-return
-  function mergeDeepProperties(a, b, prop , caseless) {
-    if (!utils.isUndefined(b)) {
-      return getMergedValue(a, b, prop , caseless);
-    } else if (!utils.isUndefined(a)) {
-      return getMergedValue(undefined, a, prop , caseless);
-    }
-  }
-
-  // eslint-disable-next-line consistent-return
-  function valueFromConfig2(a, b) {
-    if (!utils.isUndefined(b)) {
-      return getMergedValue(undefined, b);
-    }
-  }
-
-  // eslint-disable-next-line consistent-return
-  function defaultToConfig2(a, b) {
-    if (!utils.isUndefined(b)) {
-      return getMergedValue(undefined, b);
-    } else if (!utils.isUndefined(a)) {
-      return getMergedValue(undefined, a);
-    }
-  }
-
-  // eslint-disable-next-line consistent-return
-  function mergeDirectKeys(a, b, prop) {
-    if (prop in config2) {
-      return getMergedValue(a, b);
-    } else if (prop in config1) {
-      return getMergedValue(undefined, a);
-    }
-  }
-
-  const mergeMap = {
-    url: valueFromConfig2,
-    method: valueFromConfig2,
-    data: valueFromConfig2,
-    baseURL: defaultToConfig2,
-    transformRequest: defaultToConfig2,
-    transformResponse: defaultToConfig2,
-    paramsSerializer: defaultToConfig2,
-    timeout: defaultToConfig2,
-    timeoutMessage: defaultToConfig2,
-    withCredentials: defaultToConfig2,
-    withXSRFToken: defaultToConfig2,
-    adapter: defaultToConfig2,
-    responseType: defaultToConfig2,
-    xsrfCookieName: defaultToConfig2,
-    xsrfHeaderName: defaultToConfig2,
-    onUploadProgress: defaultToConfig2,
-    onDownloadProgress: defaultToConfig2,
-    decompress: defaultToConfig2,
-    maxContentLength: defaultToConfig2,
-    maxBodyLength: defaultToConfig2,
-    beforeRedirect: defaultToConfig2,
-    transport: defaultToConfig2,
-    httpAgent: defaultToConfig2,
-    httpsAgent: defaultToConfig2,
-    cancelToken: defaultToConfig2,
-    socketPath: defaultToConfig2,
-    responseEncoding: defaultToConfig2,
-    validateStatus: mergeDirectKeys,
-    headers: (a, b , prop) => mergeDeepProperties(headersToObject(a), headersToObject(b),prop, true)
-  };
-
-  utils.forEach(Object.keys(Object.assign({}, config1, config2)), function computeConfigValue(prop) {
-    const merge = mergeMap[prop] || mergeDeepProperties;
-    const configValue = merge(config1[prop], config2[prop], prop);
-    (utils.isUndefined(configValue) && merge !== mergeDirectKeys) || (config[prop] = configValue);
-  });
-
-  return config;
-}
-
-;// ./node_modules/axios/lib/helpers/resolveConfig.js
-
-
-
-
-
-
-
-
-
-/* harmony default export */ const resolveConfig = ((config) => {
-  const newConfig = mergeConfig({}, config);
-
-  let {data, withXSRFToken, xsrfHeaderName, xsrfCookieName, headers, auth} = newConfig;
-
-  newConfig.headers = headers = core_AxiosHeaders.from(headers);
-
-  newConfig.url = buildURL(buildFullPath(newConfig.baseURL, newConfig.url, newConfig.allowAbsoluteUrls), config.params, config.paramsSerializer);
-
-  // HTTP basic authentication
-  if (auth) {
-    headers.set('Authorization', 'Basic ' +
-      btoa((auth.username || '') + ':' + (auth.password ? unescape(encodeURIComponent(auth.password)) : ''))
-    );
-  }
-
-  let contentType;
-
-  if (utils.isFormData(data)) {
-    if (platform.hasStandardBrowserEnv || platform.hasStandardBrowserWebWorkerEnv) {
-      headers.setContentType(undefined); // Let the browser set it
-    } else if ((contentType = headers.getContentType()) !== false) {
-      // fix semicolon duplication issue for ReactNative FormData implementation
-      const [type, ...tokens] = contentType ? contentType.split(';').map(token => token.trim()).filter(Boolean) : [];
-      headers.setContentType([type || 'multipart/form-data', ...tokens].join('; '));
-    }
-  }
-
-  // Add xsrf header
-  // This is only done if running in a standard browser environment.
-  // Specifically not if we're in a web worker, or react-native.
-
-  if (platform.hasStandardBrowserEnv) {
-    withXSRFToken && utils.isFunction(withXSRFToken) && (withXSRFToken = withXSRFToken(newConfig));
-
-    if (withXSRFToken || (withXSRFToken !== false && isURLSameOrigin(newConfig.url))) {
-      // Add xsrf header
-      const xsrfValue = xsrfHeaderName && xsrfCookieName && cookies.read(xsrfCookieName);
-
-      if (xsrfValue) {
-        headers.set(xsrfHeaderName, xsrfValue);
-      }
-    }
-  }
-
-  return newConfig;
-});
-
-
-;// ./node_modules/axios/lib/adapters/xhr.js
-
-
-
-
-
-
-
-
-
-
-
-const isXHRAdapterSupported = typeof XMLHttpRequest !== 'undefined';
-
-/* harmony default export */ const xhr = (isXHRAdapterSupported && function (config) {
-  return new Promise(function dispatchXhrRequest(resolve, reject) {
-    const _config = resolveConfig(config);
-    let requestData = _config.data;
-    const requestHeaders = core_AxiosHeaders.from(_config.headers).normalize();
-    let {responseType, onUploadProgress, onDownloadProgress} = _config;
-    let onCanceled;
-    let uploadThrottled, downloadThrottled;
-    let flushUpload, flushDownload;
-
-    function done() {
-      flushUpload && flushUpload(); // flush events
-      flushDownload && flushDownload(); // flush events
-
-      _config.cancelToken && _config.cancelToken.unsubscribe(onCanceled);
-
-      _config.signal && _config.signal.removeEventListener('abort', onCanceled);
-    }
-
-    let request = new XMLHttpRequest();
-
-    request.open(_config.method.toUpperCase(), _config.url, true);
-
-    // Set the request timeout in MS
-    request.timeout = _config.timeout;
-
-    function onloadend() {
-      if (!request) {
-        return;
-      }
-      // Prepare the response
-      const responseHeaders = core_AxiosHeaders.from(
-        'getAllResponseHeaders' in request && request.getAllResponseHeaders()
-      );
-      const responseData = !responseType || responseType === 'text' || responseType === 'json' ?
-        request.responseText : request.response;
-      const response = {
-        data: responseData,
-        status: request.status,
-        statusText: request.statusText,
-        headers: responseHeaders,
-        config,
-        request
-      };
-
-      settle(function _resolve(value) {
-        resolve(value);
-        done();
-      }, function _reject(err) {
-        reject(err);
-        done();
-      }, response);
-
-      // Clean up request
-      request = null;
-    }
-
-    if ('onloadend' in request) {
-      // Use onloadend if available
-      request.onloadend = onloadend;
-    } else {
-      // Listen for ready state to emulate onloadend
-      request.onreadystatechange = function handleLoad() {
-        if (!request || request.readyState !== 4) {
-          return;
-        }
-
-        // The request errored out and we didn't get a response, this will be
-        // handled by onerror instead
-        // With one exception: request that using file: protocol, most browsers
-        // will return status as 0 even though it's a successful request
-        if (request.status === 0 && !(request.responseURL && request.responseURL.indexOf('file:') === 0)) {
-          return;
-        }
-        // readystate handler is calling before onerror or ontimeout handlers,
-        // so we should call onloadend on the next 'tick'
-        setTimeout(onloadend);
-      };
-    }
-
-    // Handle browser request cancellation (as opposed to a manual cancellation)
-    request.onabort = function handleAbort() {
-      if (!request) {
-        return;
-      }
-
-      reject(new core_AxiosError('Request aborted', core_AxiosError.ECONNABORTED, config, request));
-
-      // Clean up request
-      request = null;
-    };
-
-    // Handle low level network errors
-    request.onerror = function handleError() {
-      // Real errors are hidden from us by the browser
-      // onerror should only fire if it's a network error
-      reject(new core_AxiosError('Network Error', core_AxiosError.ERR_NETWORK, config, request));
-
-      // Clean up request
-      request = null;
-    };
-
-    // Handle timeout
-    request.ontimeout = function handleTimeout() {
-      let timeoutErrorMessage = _config.timeout ? 'timeout of ' + _config.timeout + 'ms exceeded' : 'timeout exceeded';
-      const transitional = _config.transitional || defaults_transitional;
-      if (_config.timeoutErrorMessage) {
-        timeoutErrorMessage = _config.timeoutErrorMessage;
-      }
-      reject(new core_AxiosError(
-        timeoutErrorMessage,
-        transitional.clarifyTimeoutError ? core_AxiosError.ETIMEDOUT : core_AxiosError.ECONNABORTED,
-        config,
-        request));
-
-      // Clean up request
-      request = null;
-    };
-
-    // Remove Content-Type if data is undefined
-    requestData === undefined && requestHeaders.setContentType(null);
-
-    // Add headers to the request
-    if ('setRequestHeader' in request) {
-      utils.forEach(requestHeaders.toJSON(), function setRequestHeader(val, key) {
-        request.setRequestHeader(key, val);
-      });
-    }
-
-    // Add withCredentials to request if needed
-    if (!utils.isUndefined(_config.withCredentials)) {
-      request.withCredentials = !!_config.withCredentials;
-    }
-
-    // Add responseType to request if needed
-    if (responseType && responseType !== 'json') {
-      request.responseType = _config.responseType;
-    }
-
-    // Handle progress if needed
-    if (onDownloadProgress) {
-      ([downloadThrottled, flushDownload] = progressEventReducer(onDownloadProgress, true));
-      request.addEventListener('progress', downloadThrottled);
-    }
-
-    // Not all browsers support upload events
-    if (onUploadProgress && request.upload) {
-      ([uploadThrottled, flushUpload] = progressEventReducer(onUploadProgress));
-
-      request.upload.addEventListener('progress', uploadThrottled);
-
-      request.upload.addEventListener('loadend', flushUpload);
-    }
-
-    if (_config.cancelToken || _config.signal) {
-      // Handle cancellation
-      // eslint-disable-next-line func-names
-      onCanceled = cancel => {
-        if (!request) {
-          return;
-        }
-        reject(!cancel || cancel.type ? new cancel_CanceledError(null, config, request) : cancel);
-        request.abort();
-        request = null;
-      };
-
-      _config.cancelToken && _config.cancelToken.subscribe(onCanceled);
-      if (_config.signal) {
-        _config.signal.aborted ? onCanceled() : _config.signal.addEventListener('abort', onCanceled);
-      }
-    }
-
-    const protocol = parseProtocol(_config.url);
-
-    if (protocol && platform.protocols.indexOf(protocol) === -1) {
-      reject(new core_AxiosError('Unsupported protocol ' + protocol + ':', core_AxiosError.ERR_BAD_REQUEST, config));
-      return;
-    }
-
-
-    // Send the request
-    request.send(requestData || null);
-  });
-});
-
-;// ./node_modules/axios/lib/helpers/composeSignals.js
-
-
-
-
-const composeSignals = (signals, timeout) => {
-  const {length} = (signals = signals ? signals.filter(Boolean) : []);
-
-  if (timeout || length) {
-    let controller = new AbortController();
-
-    let aborted;
-
-    const onabort = function (reason) {
-      if (!aborted) {
-        aborted = true;
-        unsubscribe();
-        const err = reason instanceof Error ? reason : this.reason;
-        controller.abort(err instanceof core_AxiosError ? err : new cancel_CanceledError(err instanceof Error ? err.message : err));
-      }
-    }
-
-    let timer = timeout && setTimeout(() => {
-      timer = null;
-      onabort(new core_AxiosError(`timeout ${timeout} of ms exceeded`, core_AxiosError.ETIMEDOUT))
-    }, timeout)
-
-    const unsubscribe = () => {
-      if (signals) {
-        timer && clearTimeout(timer);
-        timer = null;
-        signals.forEach(signal => {
-          signal.unsubscribe ? signal.unsubscribe(onabort) : signal.removeEventListener('abort', onabort);
-        });
-        signals = null;
-      }
-    }
-
-    signals.forEach((signal) => signal.addEventListener('abort', onabort));
-
-    const {signal} = controller;
-
-    signal.unsubscribe = () => utils.asap(unsubscribe);
-
-    return signal;
-  }
-}
-
-/* harmony default export */ const helpers_composeSignals = (composeSignals);
-
-;// ./node_modules/axios/lib/helpers/trackStream.js
-
-const streamChunk = function* (chunk, chunkSize) {
-  let len = chunk.byteLength;
-
-  if (!chunkSize || len < chunkSize) {
-    yield chunk;
+const swap32IfBE = isLE
+    ? (u) => u
+    : byteSwap32;
+// Built-in hex conversion https://caniuse.com/mdn-javascript_builtins_uint8array_fromhex
+const hasHexBuiltin = /* @__PURE__ */ (/* unused pure expression or super */ null && ((() => 
+// @ts-ignore: to check the existence of the method
+typeof Uint8Array.from([]).toHex === "function" &&
+    // @ts-ignore: to check the existence of the method
+    typeof Uint8Array.fromHex === "function")()));
+// We use optimized technique to convert hex string to byte array
+const asciis = { _0: 48, _9: 57, A: 65, F: 70, a: 97, f: 102 };
+function asciiToBase16(ch) {
+    if (ch >= asciis._0 && ch <= asciis._9)
+        return ch - asciis._0; // '2' => 50-48
+    if (ch >= asciis.A && ch <= asciis.F)
+        return ch - (asciis.A - 10); // 'B' => 66-(65-10)
+    if (ch >= asciis.a && ch <= asciis.f)
+        return ch - (asciis.a - 10); // 'b' => 98-(97-10)
     return;
-  }
-
-  let pos = 0;
-  let end;
-
-  while (pos < len) {
-    end = pos + chunkSize;
-    yield chunk.slice(pos, end);
-    pos = end;
-  }
 }
-
-const readBytes = async function* (iterable, chunkSize) {
-  for await (const chunk of readStream(iterable)) {
-    yield* streamChunk(chunk, chunkSize);
-  }
-}
-
-const readStream = async function* (stream) {
-  if (stream[Symbol.asyncIterator]) {
-    yield* stream;
-    return;
-  }
-
-  const reader = stream.getReader();
-  try {
-    for (;;) {
-      const {done, value} = await reader.read();
-      if (done) {
-        break;
-      }
-      yield value;
+/**
+ * Convert hex string to byte array. Uses built-in function, when available.
+ * @example hexToBytes('cafe0123') // Uint8Array.from([0xca, 0xfe, 0x01, 0x23])
+ */
+function hexToBytes(hex) {
+    if (typeof hex !== "string") {
+        throw new Error("hex string expected, got " + typeof hex);
     }
-  } finally {
-    await reader.cancel();
-  }
-}
-
-const trackStream = (stream, chunkSize, onProgress, onFinish) => {
-  const iterator = readBytes(stream, chunkSize);
-
-  let bytes = 0;
-  let done;
-  let _onFinish = (e) => {
-    if (!done) {
-      done = true;
-      onFinish && onFinish(e);
+    // @ts-ignore: to check the existence of the method
+    if (hasHexBuiltin)
+        return Uint8Array.fromHex(hex);
+    const hl = hex.length;
+    const al = hl / 2;
+    if (hl % 2) {
+        throw new Error("hex string expected, got unpadded hex of length " + hl);
     }
-  }
-
-  return new ReadableStream({
-    async pull(controller) {
-      try {
-        const {done, value} = await iterator.next();
-
-        if (done) {
-         _onFinish();
-          controller.close();
-          return;
+    const array = new Uint8Array(al);
+    for (let ai = 0, hi = 0; ai < al; ai++, hi += 2) {
+        const n1 = asciiToBase16(hex.charCodeAt(hi));
+        const n2 = asciiToBase16(hex.charCodeAt(hi + 1));
+        if (n1 === undefined || n2 === undefined) {
+            const char = hex[hi] + hex[hi + 1];
+            throw new Error('hex string expected, got non-hex character "' + char + '" at index ' +
+                hi);
         }
-
-        let len = value.byteLength;
-        if (onProgress) {
-          let loadedBytes = bytes += len;
-          onProgress(loadedBytes);
-        }
-        controller.enqueue(new Uint8Array(value));
-      } catch (err) {
-        _onFinish(err);
-        throw err;
-      }
-    },
-    cancel(reason) {
-      _onFinish(reason);
-      return iterator.return();
+        array[ai] = n1 * 16 + n2; // multiply first octet, e.g. 'a3' => 10*16+3 => 160 + 3 => 163
     }
-  }, {
-    highWaterMark: 2
-  })
+    return array;
 }
-
-;// ./node_modules/axios/lib/adapters/fetch.js
-
-
-
-
-
-
-
-
-
-
-const isFetchSupported = typeof fetch === 'function' && typeof Request === 'function' && typeof Response === 'function';
-const isReadableStreamSupported = isFetchSupported && typeof ReadableStream === 'function';
-
-// used only inside the fetch adapter
-const encodeText = isFetchSupported && (typeof TextEncoder === 'function' ?
-    ((encoder) => (str) => encoder.encode(str))(new TextEncoder()) :
-    async (str) => new Uint8Array(await new Response(str).arrayBuffer())
-);
-
-const test = (fn, ...args) => {
-  try {
-    return !!fn(...args);
-  } catch (e) {
-    return false
-  }
+/**
+ * Converts string to bytes using UTF8 encoding.
+ * @example utf8ToBytes('abc') // Uint8Array.from([97, 98, 99])
+ */
+function utf8ToBytes(str) {
+    if (typeof str !== "string")
+        throw new Error("string expected");
+    return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
 }
-
-const supportsRequestStream = isReadableStreamSupported && test(() => {
-  let duplexAccessed = false;
-
-  const hasContentType = new Request(platform.origin, {
-    body: new ReadableStream(),
-    method: 'POST',
-    get duplex() {
-      duplexAccessed = true;
-      return 'half';
-    },
-  }).headers.has('Content-Type');
-
-  return duplexAccessed && !hasContentType;
+/**
+ * Converts bytes to string using UTF8 encoding.
+ * @example bytesToUtf8(Uint8Array.from([97, 98, 99])) // 'abc'
+ */
+function bytesToUtf8(bytes) {
+    return new TextDecoder().decode(bytes);
+}
+/** Copies several Uint8Arrays into one. */
+function concatBytes(...arrays) {
+    let sum = 0;
+    for (let i = 0; i < arrays.length; i++) {
+        const a = arrays[i];
+        abytes(a);
+        sum += a.length;
+    }
+    const res = new Uint8Array(sum);
+    for (let i = 0, pad = 0; i < arrays.length; i++) {
+        const a = arrays[i];
+        res.set(a, pad);
+        pad += a.length;
+    }
+    return res;
+}
+function createHasher(hashCons, info = {}) {
+    const hashC = (msg, opts) => hashCons(opts).update(msg).digest();
+    const tmp = hashCons(undefined);
+    hashC.outputLen = tmp.outputLen;
+    hashC.blockLen = tmp.blockLen;
+    hashC.create = (opts) => hashCons(opts);
+    Object.assign(hashC, info);
+    return Object.freeze(hashC);
+}
+// 06 09 60 86 48 01 65 03 04 02
+const oidNist = (suffix) => ({
+    oid: Uint8Array.from([
+        0x06,
+        0x09,
+        0x60,
+        0x86,
+        0x48,
+        0x01,
+        0x65,
+        0x03,
+        0x04,
+        0x02,
+        suffix,
+    ]),
 });
 
-const DEFAULT_CHUNK_SIZE = 64 * 1024;
+;// ./node_modules/crystals-kyber-js/esm/src/sha3/sha3.js
+/**
+ * This file is based on noble-hashes (https://github.com/paulmillr/noble-hashes).
+ *
+ * noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com)
+ *
+ * The original file is located at:
+ * https://github.com/paulmillr/noble-hashes/blob/4e358a46d682adfb005ae6314ec999f2513086b9/src/sha3.ts
+ */
+/**
+ * SHA3 (keccak) hash function, based on a new "Sponge function" design.
+ * Different from older hashes, the internal state is bigger than output size.
+ *
+ * Check out [FIPS-202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf),
+ * [Website](https://keccak.team/keccak.html),
+ * [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub).
+ *
+ * Check out `sha3-addons` module for cSHAKE, k12, and others.
+ * @module
+ */
 
-const supportsResponseStream = isReadableStreamSupported &&
-  test(() => utils.isReadableStream(new Response('').body));
+// prettier-ignore
+
+// No __PURE__ annotations in sha3 header:
+// EVERYTHING is in fact used on every export.
+// Various per round constants calculations
+const _0n = BigInt(0);
+const _1n = BigInt(1);
+const _2n = BigInt(2);
+const _7n = BigInt(7);
+const _256n = BigInt(256);
+const _0x71n = BigInt(0x71);
+const SHA3_PI = [];
+const SHA3_ROTL = [];
+const _SHA3_IOTA = []; // no pure annotation: var is always used
+for (let round = 0, R = _1n, x = 1, y = 0; round < 24; round++) {
+    // Pi
+    [x, y] = [y, (2 * x + 3 * y) % 5];
+    SHA3_PI.push(2 * (5 * y + x));
+    // Rotational
+    SHA3_ROTL.push((((round + 1) * (round + 2)) / 2) % 64);
+    // Iota
+    let t = _0n;
+    for (let j = 0; j < 7; j++) {
+        R = ((R << _1n) ^ ((R >> _7n) * _0x71n)) % _256n;
+        if (R & _2n)
+            t ^= _1n << ((_1n << BigInt(j)) - _1n);
+    }
+    _SHA3_IOTA.push(t);
+}
+const IOTAS = split(_SHA3_IOTA, true);
+const SHA3_IOTA_H = IOTAS[0];
+const SHA3_IOTA_L = IOTAS[1];
+// Left rotation (without 0, 32, 64)
+const rotlH = (h, l, s) => (s > 32 ? rotlBH(h, l, s) : rotlSH(h, l, s));
+const rotlL = (h, l, s) => (s > 32 ? rotlBL(h, l, s) : rotlSL(h, l, s));
+/** `keccakf1600` internal function, additionally allows to adjust round count. */
+function keccakP(s, rounds = 24) {
+    const B = new Uint32Array(5 * 2);
+    // NOTE: all indices are x2 since we store state as u32 instead of u64 (bigints to slow in js)
+    for (let round = 24 - rounds; round < 24; round++) {
+        // Theta θ
+        for (let x = 0; x < 10; x++) {
+            B[x] = s[x] ^ s[x + 10] ^ s[x + 20] ^ s[x + 30] ^ s[x + 40];
+        }
+        for (let x = 0; x < 10; x += 2) {
+            const idx1 = (x + 8) % 10;
+            const idx0 = (x + 2) % 10;
+            const B0 = B[idx0];
+            const B1 = B[idx0 + 1];
+            const Th = rotlH(B0, B1, 1) ^ B[idx1];
+            const Tl = rotlL(B0, B1, 1) ^ B[idx1 + 1];
+            for (let y = 0; y < 50; y += 10) {
+                s[x + y] ^= Th;
+                s[x + y + 1] ^= Tl;
+            }
+        }
+        // Rho (ρ) and Pi (π)
+        let curH = s[2];
+        let curL = s[3];
+        for (let t = 0; t < 24; t++) {
+            const shift = SHA3_ROTL[t];
+            const Th = rotlH(curH, curL, shift);
+            const Tl = rotlL(curH, curL, shift);
+            const PI = SHA3_PI[t];
+            curH = s[PI];
+            curL = s[PI + 1];
+            s[PI] = Th;
+            s[PI + 1] = Tl;
+        }
+        // Chi (χ)
+        for (let y = 0; y < 50; y += 10) {
+            for (let x = 0; x < 10; x++)
+                B[x] = s[y + x];
+            for (let x = 0; x < 10; x++) {
+                s[y + x] ^= ~B[(x + 2) % 10] & B[(x + 4) % 10];
+            }
+        }
+        // Iota (ι)
+        s[0] ^= SHA3_IOTA_H[round];
+        s[1] ^= SHA3_IOTA_L[round];
+    }
+    clean(B);
+}
+/** Keccak sponge function. */
+class Keccak {
+    // NOTE: we accept arguments in bytes instead of bits here.
+    constructor(blockLen, suffix, outputLen, enableXOF = false, rounds = 24) {
+        Object.defineProperty(this, "state", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "pos", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "posOut", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "finished", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "state32", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "destroyed", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "blockLen", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "suffix", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "outputLen", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "enableXOF", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "rounds", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        this.blockLen = blockLen;
+        this.suffix = suffix;
+        this.outputLen = outputLen;
+        this.enableXOF = enableXOF;
+        this.rounds = rounds;
+        // Can be passed from user as dkLen
+        anumber(outputLen, "outputLen");
+        // 1600 = 5x5 matrix of 64bit.  1600 bits === 200 bytes
+        // 0 < blockLen < 200
+        if (!(0 < blockLen && blockLen < 200)) {
+            throw new Error("only keccak-f1600 function is supported");
+        }
+        this.state = new Uint8Array(200);
+        this.state32 = u32(this.state);
+    }
+    clone() {
+        return this._cloneInto();
+    }
+    keccak() {
+        swap32IfBE(this.state32);
+        keccakP(this.state32, this.rounds);
+        swap32IfBE(this.state32);
+        this.posOut = 0;
+        this.pos = 0;
+    }
+    update(data) {
+        aexists(this);
+        abytes(data);
+        const { blockLen, state } = this;
+        const len = data.length;
+        for (let pos = 0; pos < len;) {
+            const take = Math.min(blockLen - this.pos, len - pos);
+            for (let i = 0; i < take; i++)
+                state[this.pos++] ^= data[pos++];
+            if (this.pos === blockLen)
+                this.keccak();
+        }
+        return this;
+    }
+    finish() {
+        if (this.finished)
+            return;
+        this.finished = true;
+        const { state, suffix, pos, blockLen } = this;
+        // Do the padding
+        state[pos] ^= suffix;
+        if ((suffix & 0x80) !== 0 && pos === blockLen - 1)
+            this.keccak();
+        state[blockLen - 1] ^= 0x80;
+        this.keccak();
+    }
+    writeInto(out) {
+        aexists(this, false);
+        abytes(out);
+        this.finish();
+        const bufferOut = this.state;
+        const { blockLen } = this;
+        for (let pos = 0, len = out.length; pos < len;) {
+            if (this.posOut >= blockLen)
+                this.keccak();
+            const take = Math.min(blockLen - this.posOut, len - pos);
+            out.set(bufferOut.subarray(this.posOut, this.posOut + take), pos);
+            this.posOut += take;
+            pos += take;
+        }
+        return out;
+    }
+    xofInto(out) {
+        // Sha3/Keccak usage with XOF is probably mistake, only SHAKE instances can do XOF
+        if (!this.enableXOF) {
+            throw new Error("XOF is not possible for this instance");
+        }
+        return this.writeInto(out);
+    }
+    xof(bytes) {
+        anumber(bytes);
+        return this.xofInto(new Uint8Array(bytes));
+    }
+    digestInto(out) {
+        aoutput(out, this);
+        if (this.finished)
+            throw new Error("digest() was already called");
+        this.writeInto(out);
+        this.destroy();
+        return out;
+    }
+    digest() {
+        return this.digestInto(new Uint8Array(this.outputLen));
+    }
+    destroy() {
+        this.destroyed = true;
+        clean(this.state);
+    }
+    _cloneInto(to) {
+        const { blockLen, suffix, outputLen, rounds, enableXOF } = this;
+        to ||= new Keccak(blockLen, suffix, outputLen, enableXOF, rounds);
+        to.state32.set(this.state32);
+        to.pos = this.pos;
+        to.posOut = this.posOut;
+        to.finished = this.finished;
+        to.rounds = rounds;
+        // Suffix can change in cSHAKE
+        to.suffix = suffix;
+        to.outputLen = outputLen;
+        to.enableXOF = enableXOF;
+        to.destroyed = this.destroyed;
+        return to;
+    }
+}
+const genKeccak = (suffix, blockLen, outputLen, info = {}) => createHasher(() => new Keccak(blockLen, suffix, outputLen), info);
+// /** SHA3-224 hash function. */
+// export const sha3_224: CHash = /* @__PURE__ */ genKeccak(
+//   0x06,
+//   144,
+//   28,
+//   /* @__PURE__ */ oidNist(0x07),
+// );
+/** SHA3-256 hash function. Different from keccak-256. */
+const sha3_256 = /* @__PURE__ */ genKeccak(0x06, 136, 32, 
+/* @__PURE__ */ oidNist(0x08));
+// /** SHA3-384 hash function. */
+// export const sha3_384: CHash = /* @__PURE__ */ genKeccak(
+//   0x06,
+//   104,
+//   48,
+//   /* @__PURE__ */ oidNist(0x09),
+// );
+/** SHA3-512 hash function. */
+const sha3_512 = /* @__PURE__ */ genKeccak(0x06, 72, 64, 
+/* @__PURE__ */ oidNist(0x0a));
+/** keccak-224 hash function. */
+const keccak_224 = /* @__PURE__ */ (/* unused pure expression or super */ null && (genKeccak(0x01, 144, 28)));
+/** keccak-256 hash function. Different from SHA3-256. */
+const keccak_256 = /* @__PURE__ */ (/* unused pure expression or super */ null && (genKeccak(0x01, 136, 32)));
+/** keccak-384 hash function. */
+const keccak_384 = /* @__PURE__ */ (/* unused pure expression or super */ null && (genKeccak(0x01, 104, 48)));
+/** keccak-512 hash function. */
+const keccak_512 = /* @__PURE__ */ (/* unused pure expression or super */ null && (genKeccak(0x01, 72, 64)));
+const genShake = (suffix, blockLen, outputLen, info = {}) => createHasher((opts = {}) => new Keccak(blockLen, suffix, opts.dkLen === undefined ? outputLen : opts.dkLen, true), info);
+/** SHAKE128 XOF with 128-bit security. */
+const shake128 = 
+/* @__PURE__ */
+genShake(0x1f, 168, 16, /* @__PURE__ */ oidNist(0x0b));
+/** SHAKE256 XOF with 256-bit security. */
+const shake256 = 
+/* @__PURE__ */
+genShake(0x1f, 136, 32, /* @__PURE__ */ oidNist(0x0c));
+// /** SHAKE128 XOF with 256-bit output (NIST version). */
+// export const shake128_32: CHashXOF<Keccak, ShakeOpts> =
+//   /* @__PURE__ */
+//   genShake(0x1f, 168, 32, /* @__PURE__ */ oidNist(0x0b));
+// /** SHAKE256 XOF with 512-bit output (NIST version). */
+// export const shake256_64: CHashXOF<Keccak, ShakeOpts> =
+//   /* @__PURE__ */
+//   genShake(0x1f, 136, 64, /* @__PURE__ */ oidNist(0x0c));
+
+;// ./node_modules/crystals-kyber-js/esm/src/deps.js
 
 
-const resolvers = {
-  stream: supportsResponseStream && ((res) => res.body)
-};
-
-isFetchSupported && (((res) => {
-  ['text', 'arrayBuffer', 'blob', 'formData', 'stream'].forEach(type => {
-    !resolvers[type] && (resolvers[type] = utils.isFunction(res[type]) ? (res) => res[type]() :
-      (_, config) => {
-        throw new core_AxiosError(`Response type '${type}' is not supported`, core_AxiosError.ERR_NOT_SUPPORT, config);
-      })
-  });
-})(new Response));
-
-const getBodyLength = async (body) => {
-  if (body == null) {
-    return 0;
-  }
-
-  if(utils.isBlob(body)) {
-    return body.size;
-  }
-
-  if(utils.isSpecCompliantForm(body)) {
-    const _request = new Request(platform.origin, {
-      method: 'POST',
-      body,
+;// ./node_modules/crystals-kyber-js/esm/_dnt.shims.js
+const dntGlobals = {};
+const dntGlobalThis = createMergeProxy(globalThis, dntGlobals);
+function createMergeProxy(baseObj, extObj) {
+    return new Proxy(baseObj, {
+        get(_target, prop, _receiver) {
+            if (prop in extObj) {
+                return extObj[prop];
+            }
+            else {
+                return baseObj[prop];
+            }
+        },
+        set(_target, prop, value) {
+            if (prop in extObj) {
+                delete extObj[prop];
+            }
+            baseObj[prop] = value;
+            return true;
+        },
+        deleteProperty(_target, prop) {
+            let success = false;
+            if (prop in extObj) {
+                delete extObj[prop];
+                success = true;
+            }
+            if (prop in baseObj) {
+                delete baseObj[prop];
+                success = true;
+            }
+            return success;
+        },
+        ownKeys(_target) {
+            const baseKeys = Reflect.ownKeys(baseObj);
+            const extKeys = Reflect.ownKeys(extObj);
+            const extKeysSet = new Set(extKeys);
+            return [...baseKeys.filter((k) => !extKeysSet.has(k)), ...extKeys];
+        },
+        defineProperty(_target, prop, desc) {
+            if (prop in extObj) {
+                delete extObj[prop];
+            }
+            Reflect.defineProperty(baseObj, prop, desc);
+            return true;
+        },
+        getOwnPropertyDescriptor(_target, prop) {
+            if (prop in extObj) {
+                return Reflect.getOwnPropertyDescriptor(extObj, prop);
+            }
+            else {
+                return Reflect.getOwnPropertyDescriptor(baseObj, prop);
+            }
+        },
+        has(_target, prop) {
+            return prop in extObj || prop in baseObj;
+        },
     });
-    return (await _request.arrayBuffer()).byteLength;
-  }
-
-  if(utils.isArrayBufferView(body) || utils.isArrayBuffer(body)) {
-    return body.byteLength;
-  }
-
-  if(utils.isURLSearchParams(body)) {
-    body = body + '';
-  }
-
-  if(utils.isString(body)) {
-    return (await encodeText(body)).byteLength;
-  }
 }
 
-const resolveBodyLength = async (headers, body) => {
-  const length = utils.toFiniteNumber(headers.getContentLength());
+;// ./node_modules/crystals-kyber-js/esm/src/utils.js
 
-  return length == null ? getBodyLength(body) : length;
+
+function utils_byte(n) {
+    return n % 256;
 }
-
-/* harmony default export */ const adapters_fetch = (isFetchSupported && (async (config) => {
-  let {
-    url,
-    method,
-    data,
-    signal,
-    cancelToken,
-    timeout,
-    onDownloadProgress,
-    onUploadProgress,
-    responseType,
-    headers,
-    withCredentials = 'same-origin',
-    fetchOptions
-  } = resolveConfig(config);
-
-  responseType = responseType ? (responseType + '').toLowerCase() : 'text';
-
-  let composedSignal = helpers_composeSignals([signal, cancelToken && cancelToken.toAbortSignal()], timeout);
-
-  let request;
-
-  const unsubscribe = composedSignal && composedSignal.unsubscribe && (() => {
-      composedSignal.unsubscribe();
-  });
-
-  let requestContentLength;
-
-  try {
-    if (
-      onUploadProgress && supportsRequestStream && method !== 'get' && method !== 'head' &&
-      (requestContentLength = await resolveBodyLength(headers, data)) !== 0
-    ) {
-      let _request = new Request(url, {
-        method: 'POST',
-        body: data,
-        duplex: "half"
-      });
-
-      let contentTypeHeader;
-
-      if (utils.isFormData(data) && (contentTypeHeader = _request.headers.get('content-type'))) {
-        headers.setContentType(contentTypeHeader)
-      }
-
-      if (_request.body) {
-        const [onProgress, flush] = progressEventDecorator(
-          requestContentLength,
-          progressEventReducer(asyncDecorator(onUploadProgress))
-        );
-
-        data = trackStream(_request.body, DEFAULT_CHUNK_SIZE, onProgress, flush);
-      }
+function int16(n) {
+    const end = -32768;
+    const start = 32767;
+    if (n >= end && n <= start) {
+        return n;
     }
-
-    if (!utils.isString(withCredentials)) {
-      withCredentials = withCredentials ? 'include' : 'omit';
+    if (n < end) {
+        n = n + 32769;
+        n = n % 65536;
+        return start + n;
     }
-
-    // Cloudflare Workers throws when credentials are defined
-    // see https://github.com/cloudflare/workerd/issues/902
-    const isCredentialsSupported = "credentials" in Request.prototype;
-    request = new Request(url, {
-      ...fetchOptions,
-      signal: composedSignal,
-      method: method.toUpperCase(),
-      headers: headers.normalize().toJSON(),
-      body: data,
-      duplex: "half",
-      credentials: isCredentialsSupported ? withCredentials : undefined
-    });
-
-    let response = await fetch(request, fetchOptions);
-
-    const isStreamResponse = supportsResponseStream && (responseType === 'stream' || responseType === 'response');
-
-    if (supportsResponseStream && (onDownloadProgress || (isStreamResponse && unsubscribe))) {
-      const options = {};
-
-      ['status', 'statusText', 'headers'].forEach(prop => {
-        options[prop] = response[prop];
-      });
-
-      const responseContentLength = utils.toFiniteNumber(response.headers.get('content-length'));
-
-      const [onProgress, flush] = onDownloadProgress && progressEventDecorator(
-        responseContentLength,
-        progressEventReducer(asyncDecorator(onDownloadProgress), true)
-      ) || [];
-
-      response = new Response(
-        trackStream(response.body, DEFAULT_CHUNK_SIZE, onProgress, () => {
-          flush && flush();
-          unsubscribe && unsubscribe();
-        }),
-        options
-      );
+    // if (n > start) {
+    n = n - 32768;
+    n = n % 65536;
+    return end + n;
+}
+function uint16(n) {
+    return n % 65536;
+}
+function int32(n) {
+    const end = -2147483648;
+    const start = 2147483647;
+    if (n >= end && n <= start) {
+        return n;
     }
-
-    responseType = responseType || 'text';
-
-    let responseData = await resolvers[utils.findKey(resolvers, responseType) || 'text'](response, config);
-
-    !isStreamResponse && unsubscribe && unsubscribe();
-
-    return await new Promise((resolve, reject) => {
-      settle(resolve, reject, {
-        data: responseData,
-        headers: core_AxiosHeaders.from(response.headers),
-        status: response.status,
-        statusText: response.statusText,
-        config,
-        request
-      })
-    })
-  } catch (err) {
-    unsubscribe && unsubscribe();
-
-    if (err && err.name === 'TypeError' && /Load failed|fetch/i.test(err.message)) {
-      throw Object.assign(
-        new core_AxiosError('Network Error', core_AxiosError.ERR_NETWORK, config, request),
-        {
-          cause: err.cause || err
+    if (n < end) {
+        n = n + 2147483649;
+        n = n % 4294967296;
+        return start + n;
+    }
+    // if (n > start) {
+    n = n - 2147483648;
+    n = n % 4294967296;
+    return end + n;
+}
+// any bit operations to be done in uint32 must have >>> 0
+// javascript calculates bitwise in SIGNED 32 bit so you need to convert
+function uint32(n) {
+    return n % 4294967296;
+}
+/**
+ * compares two arrays
+ * @returns 1 if they are the same or 0 if not
+ */
+function constantTimeCompare(x, y) {
+    // check array lengths
+    if (x.length != y.length) {
+        return 0;
+    }
+    const v = new Uint8Array([0]);
+    for (let i = 0; i < x.length; i++) {
+        v[0] |= x[i] ^ y[i];
+    }
+    // constantTimeByteEq
+    const z = new Uint8Array([0]);
+    z[0] = ~(v[0] ^ z[0]);
+    z[0] &= z[0] >> 4;
+    z[0] &= z[0] >> 2;
+    z[0] &= z[0] >> 1;
+    return z[0];
+}
+function equalUint8Array(x, y) {
+    if (x.length != y.length) {
+        return false;
+    }
+    for (let i = 0; i < x.length; i++) {
+        if (x[i] !== y[i]) {
+            return false;
         }
-      )
     }
-
-    throw core_AxiosError.from(err, err && err.code, config, request);
-  }
-}));
-
-
-
-;// ./node_modules/axios/lib/adapters/adapters.js
-
-
-
-
-
-
-const knownAdapters = {
-  http: helpers_null,
-  xhr: xhr,
-  fetch: adapters_fetch
-}
-
-utils.forEach(knownAdapters, (fn, value) => {
-  if (fn) {
-    try {
-      Object.defineProperty(fn, 'name', {value});
-    } catch (e) {
-      // eslint-disable-next-line no-empty
-    }
-    Object.defineProperty(fn, 'adapterName', {value});
-  }
-});
-
-const renderReason = (reason) => `- ${reason}`;
-
-const isResolvedHandle = (adapter) => utils.isFunction(adapter) || adapter === null || adapter === false;
-
-/* harmony default export */ const adapters = ({
-  getAdapter: (adapters) => {
-    adapters = utils.isArray(adapters) ? adapters : [adapters];
-
-    const {length} = adapters;
-    let nameOrAdapter;
-    let adapter;
-
-    const rejectedReasons = {};
-
-    for (let i = 0; i < length; i++) {
-      nameOrAdapter = adapters[i];
-      let id;
-
-      adapter = nameOrAdapter;
-
-      if (!isResolvedHandle(nameOrAdapter)) {
-        adapter = knownAdapters[(id = String(nameOrAdapter)).toLowerCase()];
-
-        if (adapter === undefined) {
-          throw new core_AxiosError(`Unknown adapter '${id}'`);
-        }
-      }
-
-      if (adapter) {
-        break;
-      }
-
-      rejectedReasons[id || '#' + i] = adapter;
-    }
-
-    if (!adapter) {
-
-      const reasons = Object.entries(rejectedReasons)
-        .map(([id, state]) => `adapter ${id} ` +
-          (state === false ? 'is not supported by the environment' : 'is not available in the build')
-        );
-
-      let s = length ?
-        (reasons.length > 1 ? 'since :\n' + reasons.map(renderReason).join('\n') : ' ' + renderReason(reasons[0])) :
-        'as no adapter specified';
-
-      throw new core_AxiosError(
-        `There is no suitable adapter to dispatch the request ` + s,
-        'ERR_NOT_SUPPORT'
-      );
-    }
-
-    return adapter;
-  },
-  adapters: knownAdapters
-});
-
-;// ./node_modules/axios/lib/core/dispatchRequest.js
-
-
-
-
-
-
-
-
-
-/**
- * Throws a `CanceledError` if cancellation has been requested.
- *
- * @param {Object} config The config that is to be used for the request
- *
- * @returns {void}
- */
-function throwIfCancellationRequested(config) {
-  if (config.cancelToken) {
-    config.cancelToken.throwIfRequested();
-  }
-
-  if (config.signal && config.signal.aborted) {
-    throw new cancel_CanceledError(null, config);
-  }
-}
-
-/**
- * Dispatch a request to the server using the configured adapter.
- *
- * @param {object} config The config that is to be used for the request
- *
- * @returns {Promise} The Promise to be fulfilled
- */
-function dispatchRequest(config) {
-  throwIfCancellationRequested(config);
-
-  config.headers = core_AxiosHeaders.from(config.headers);
-
-  // Transform request data
-  config.data = transformData.call(
-    config,
-    config.transformRequest
-  );
-
-  if (['post', 'put', 'patch'].indexOf(config.method) !== -1) {
-    config.headers.setContentType('application/x-www-form-urlencoded', false);
-  }
-
-  const adapter = adapters.getAdapter(config.adapter || lib_defaults.adapter);
-
-  return adapter(config).then(function onAdapterResolution(response) {
-    throwIfCancellationRequested(config);
-
-    // Transform response data
-    response.data = transformData.call(
-      config,
-      config.transformResponse,
-      response
-    );
-
-    response.headers = core_AxiosHeaders.from(response.headers);
-
-    return response;
-  }, function onAdapterRejection(reason) {
-    if (!isCancel(reason)) {
-      throwIfCancellationRequested(config);
-
-      // Transform response data
-      if (reason && reason.response) {
-        reason.response.data = transformData.call(
-          config,
-          config.transformResponse,
-          reason.response
-        );
-        reason.response.headers = core_AxiosHeaders.from(reason.response.headers);
-      }
-    }
-
-    return Promise.reject(reason);
-  });
-}
-
-;// ./node_modules/axios/lib/env/data.js
-const VERSION = "1.10.0";
-;// ./node_modules/axios/lib/helpers/validator.js
-
-
-
-
-
-const validators = {};
-
-// eslint-disable-next-line func-names
-['object', 'boolean', 'number', 'function', 'string', 'symbol'].forEach((type, i) => {
-  validators[type] = function validator(thing) {
-    return typeof thing === type || 'a' + (i < 1 ? 'n ' : ' ') + type;
-  };
-});
-
-const deprecatedWarnings = {};
-
-/**
- * Transitional option validator
- *
- * @param {function|boolean?} validator - set to false if the transitional option has been removed
- * @param {string?} version - deprecated version / removed since version
- * @param {string?} message - some message with additional info
- *
- * @returns {function}
- */
-validators.transitional = function transitional(validator, version, message) {
-  function formatMessage(opt, desc) {
-    return '[Axios v' + VERSION + '] Transitional option \'' + opt + '\'' + desc + (message ? '. ' + message : '');
-  }
-
-  // eslint-disable-next-line func-names
-  return (value, opt, opts) => {
-    if (validator === false) {
-      throw new core_AxiosError(
-        formatMessage(opt, ' has been removed' + (version ? ' in ' + version : '')),
-        core_AxiosError.ERR_DEPRECATED
-      );
-    }
-
-    if (version && !deprecatedWarnings[opt]) {
-      deprecatedWarnings[opt] = true;
-      // eslint-disable-next-line no-console
-      console.warn(
-        formatMessage(
-          opt,
-          ' has been deprecated since v' + version + ' and will be removed in the near future'
-        )
-      );
-    }
-
-    return validator ? validator(value, opt, opts) : true;
-  };
-};
-
-validators.spelling = function spelling(correctSpelling) {
-  return (value, opt) => {
-    // eslint-disable-next-line no-console
-    console.warn(`${opt} is likely a misspelling of ${correctSpelling}`);
     return true;
-  }
-};
-
-/**
- * Assert object's properties type
- *
- * @param {object} options
- * @param {object} schema
- * @param {boolean?} allowUnknown
- *
- * @returns {object}
- */
-
-function assertOptions(options, schema, allowUnknown) {
-  if (typeof options !== 'object') {
-    throw new core_AxiosError('options must be an object', core_AxiosError.ERR_BAD_OPTION_VALUE);
-  }
-  const keys = Object.keys(options);
-  let i = keys.length;
-  while (i-- > 0) {
-    const opt = keys[i];
-    const validator = schema[opt];
-    if (validator) {
-      const value = options[opt];
-      const result = value === undefined || validator(value, opt, options);
-      if (result !== true) {
-        throw new core_AxiosError('option ' + opt + ' must be ' + result, core_AxiosError.ERR_BAD_OPTION_VALUE);
-      }
-      continue;
+}
+async function loadCrypto() {
+    if (typeof dntGlobalThis !== "undefined" && globalThis.crypto !== undefined) {
+        // Browsers, Node.js >= v19, Cloudflare Workers, Bun, etc.
+        return globalThis.crypto;
     }
-    if (allowUnknown !== true) {
-      throw new core_AxiosError('Unknown option ' + opt, core_AxiosError.ERR_BAD_OPTION);
+    // Node.js <= v18
+    try {
+        // @ts-ignore: to ignore "crypto"
+        const { webcrypto } = await Promise.all(/* import() */[__webpack_require__.e(565), __webpack_require__.e(143)]).then(__webpack_require__.t.bind(__webpack_require__, 1565, 19)); // node:crypto
+        return webcrypto;
     }
-  }
+    catch (_e) {
+        throw new Error("failed to load Crypto");
+    }
+}
+// prf provides a pseudo-random function (PRF) which returns
+// a byte array of length `l`, using the provided key and nonce
+// to instantiate the PRF's underlying hash function.
+function prf(len, seed, nonce) {
+    return shake256.create({ dkLen: len }).update(seed).update(new Uint8Array([nonce])).digest();
+}
+// byteopsLoad24 returns a 32-bit unsigned integer loaded from byte x.
+function byteopsLoad24(x) {
+    let r = uint32(x[0]);
+    r |= uint32(x[1]) << 8;
+    r |= uint32(x[2]) << 16;
+    return r;
+}
+// byteopsLoad32 returns a 32-bit unsigned integer loaded from byte x.
+function byteopsLoad32(x) {
+    let r = uint32(x[0]);
+    r |= uint32(x[1]) << 8;
+    r |= uint32(x[2]) << 16;
+    r |= uint32(x[3]) << 24;
+    return uint32(r);
 }
 
-/* harmony default export */ const validator = ({
-  assertOptions,
-  validators
-});
-
-;// ./node_modules/axios/lib/core/Axios.js
-
-
+;// ./node_modules/crystals-kyber-js/esm/src/mlKemBase.js
+/**
+ * This implementation is based on https://github.com/antontutoveanu/crystals-kyber-javascript,
+ * which was deveploped under the MIT licence below:
+ * https://github.com/antontutoveanu/crystals-kyber-javascript/blob/main/LICENSE
+ */
 
 
 
-
-
-
-
-
-
-const Axios_validators = validator.validators;
 
 /**
- * Create a new instance of Axios
+ * Represents the base class for the ML-KEM key encapsulation mechanism.
  *
- * @param {Object} instanceConfig The default config for the instance
+ * This class provides the base implementation for the ML-KEM key encapsulation mechanism.
  *
- * @return {Axios} A new instance of Axios
+ * @remarks
+ *
+ * This class is not intended to be used directly. Instead, use one of the subclasses:
+ *
+ * @example
+ *
+ * ```ts
+ * // Using jsr:
+ * import { MlKemBase } from "@dajiaji/mlkem";
+ * // Using npm:
+ * // import { MlKemBase } from "mlkem"; // or "crystals-kyber-js"
+ *
+ * class MlKem768 extends MlKemBase {
+ *   protected _k = 3;
+ *   protected _du = 10;
+ *   protected _dv = 4;
+ *   protected _eta1 = 2;
+ *   protected _eta2 = 2;
+ *
+ *   constructor() {
+ *     super();
+ *     this._skSize = 12 * this._k * N / 8;
+ *     this._pkSize = this._skSize + 32;
+ *     this._compressedUSize = this._k * this._du * N / 8;
+ *     this._compressedVSize = this._dv * N / 8;
+ *   }
+ * }
+ *
+ * const kyber = new MlKem768();
+ * ```
  */
-class Axios {
-  constructor(instanceConfig) {
-    this.defaults = instanceConfig || {};
-    this.interceptors = {
-      request: new core_InterceptorManager(),
-      response: new core_InterceptorManager()
-    };
-  }
-
-  /**
-   * Dispatch a request
-   *
-   * @param {String|Object} configOrUrl The config specific for this request (merged with this.defaults)
-   * @param {?Object} config
-   *
-   * @returns {Promise} The Promise to be fulfilled
-   */
-  async request(configOrUrl, config) {
-    try {
-      return await this._request(configOrUrl, config);
-    } catch (err) {
-      if (err instanceof Error) {
-        let dummy = {};
-
-        Error.captureStackTrace ? Error.captureStackTrace(dummy) : (dummy = new Error());
-
-        // slice off the Error: ... line
-        const stack = dummy.stack ? dummy.stack.replace(/^.+\n/, '') : '';
+class MlKemBase {
+    /**
+     * Creates a new instance of the MlKemBase class.
+     */
+    constructor() {
+        Object.defineProperty(this, "_api", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: undefined
+        });
+        Object.defineProperty(this, "_k", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "_du", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "_dv", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "_eta1", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "_eta2", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "_skSize", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "_pkSize", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "_compressedUSize", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "_compressedVSize", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+    }
+    /**
+     * Generates a keypair [publicKey, privateKey].
+     *
+     * If an error occurred, throws {@link MlKemError}.
+     *
+     * @returns A kaypair [publicKey, privateKey].
+     * @throws {@link MlKemError}
+     *
+     * @example Generates a {@link MlKem768} keypair.
+     *
+     * ```ts
+     * // Using jsr:
+     * import { MlKem768 } from "@dajiaji/mlkem";
+     * // Using npm:
+     * // import { MlKem768 } from "mlkem"; // or "crystals-kyber-js"
+     *
+     * const kyber = new MlKem768();
+     * const [pk, sk] = await kyber.generateKeyPair();
+     * ```
+     */
+    async generateKeyPair() {
+        await this._setup();
         try {
-          if (!err.stack) {
-            err.stack = stack;
-            // match without the 2 top stack lines
-          } else if (stack && !String(err.stack).endsWith(stack.replace(/^.+\n.+\n/, ''))) {
-            err.stack += '\n' + stack
-          }
-        } catch (e) {
-          // ignore the case where "stack" is an un-writable property
+            const rnd = new Uint8Array(64);
+            this._api.getRandomValues(rnd);
+            return this._deriveKeyPair(rnd);
         }
-      }
-
-      throw err;
-    }
-  }
-
-  _request(configOrUrl, config) {
-    /*eslint no-param-reassign:0*/
-    // Allow for axios('example/url'[, config]) a la fetch API
-    if (typeof configOrUrl === 'string') {
-      config = config || {};
-      config.url = configOrUrl;
-    } else {
-      config = configOrUrl || {};
-    }
-
-    config = mergeConfig(this.defaults, config);
-
-    const {transitional, paramsSerializer, headers} = config;
-
-    if (transitional !== undefined) {
-      validator.assertOptions(transitional, {
-        silentJSONParsing: Axios_validators.transitional(Axios_validators.boolean),
-        forcedJSONParsing: Axios_validators.transitional(Axios_validators.boolean),
-        clarifyTimeoutError: Axios_validators.transitional(Axios_validators.boolean)
-      }, false);
-    }
-
-    if (paramsSerializer != null) {
-      if (utils.isFunction(paramsSerializer)) {
-        config.paramsSerializer = {
-          serialize: paramsSerializer
+        catch (e) {
+            throw new MlKemError(e);
         }
-      } else {
-        validator.assertOptions(paramsSerializer, {
-          encode: Axios_validators.function,
-          serialize: Axios_validators.function
-        }, true);
-      }
     }
-
-    // Set config.allowAbsoluteUrls
-    if (config.allowAbsoluteUrls !== undefined) {
-      // do nothing
-    } else if (this.defaults.allowAbsoluteUrls !== undefined) {
-      config.allowAbsoluteUrls = this.defaults.allowAbsoluteUrls;
-    } else {
-      config.allowAbsoluteUrls = true;
+    /**
+     * Derives a keypair [publicKey, privateKey] deterministically from a 64-octet seed.
+     *
+     * If an error occurred, throws {@link MlKemError}.
+     *
+     * @param seed A 64-octet seed for the deterministic key generation.
+     * @returns A kaypair [publicKey, privateKey].
+     * @throws {@link MlKemError}
+     *
+     * @example Derives a {@link MlKem768} keypair deterministically.
+     *
+     * ```ts
+     * // Using jsr:
+     * import { MlKem768 } from "@dajiaji/mlkem";
+     * // Using npm:
+     * // import { MlKem768 } from "mlkem"; // or "crystals-kyber-js"
+     *
+     * const kyber = new MlKem768();
+     * const seed = new Uint8Array(64);
+     * globalThis.crypto.getRandomValues(seed);
+     * const [pk, sk] = await kyber.deriveKeyPair(seed);
+     * ```
+     */
+    async deriveKeyPair(seed) {
+        await this._setup();
+        try {
+            if (seed.byteLength !== 64) {
+                throw new Error("seed must be 64 bytes in length");
+            }
+            return this._deriveKeyPair(seed);
+        }
+        catch (e) {
+            throw new MlKemError(e);
+        }
     }
-
-    validator.assertOptions(config, {
-      baseUrl: Axios_validators.spelling('baseURL'),
-      withXsrfToken: Axios_validators.spelling('withXSRFToken')
-    }, true);
-
-    // Set config.method
-    config.method = (config.method || this.defaults.method || 'get').toLowerCase();
-
-    // Flatten headers
-    let contextHeaders = headers && utils.merge(
-      headers.common,
-      headers[config.method]
-    );
-
-    headers && utils.forEach(
-      ['delete', 'get', 'head', 'post', 'put', 'patch', 'common'],
-      (method) => {
-        delete headers[method];
-      }
-    );
-
-    config.headers = core_AxiosHeaders.concat(contextHeaders, headers);
-
-    // filter out skipped interceptors
-    const requestInterceptorChain = [];
-    let synchronousRequestInterceptors = true;
-    this.interceptors.request.forEach(function unshiftRequestInterceptors(interceptor) {
-      if (typeof interceptor.runWhen === 'function' && interceptor.runWhen(config) === false) {
-        return;
-      }
-
-      synchronousRequestInterceptors = synchronousRequestInterceptors && interceptor.synchronous;
-
-      requestInterceptorChain.unshift(interceptor.fulfilled, interceptor.rejected);
-    });
-
-    const responseInterceptorChain = [];
-    this.interceptors.response.forEach(function pushResponseInterceptors(interceptor) {
-      responseInterceptorChain.push(interceptor.fulfilled, interceptor.rejected);
-    });
-
-    let promise;
-    let i = 0;
-    let len;
-
-    if (!synchronousRequestInterceptors) {
-      const chain = [dispatchRequest.bind(this), undefined];
-      chain.unshift.apply(chain, requestInterceptorChain);
-      chain.push.apply(chain, responseInterceptorChain);
-      len = chain.length;
-
-      promise = Promise.resolve(config);
-
-      while (i < len) {
-        promise = promise.then(chain[i++], chain[i++]);
-      }
-
-      return promise;
+    /**
+     * Generates a shared secret from the encapsulated ciphertext and the private key.
+     *
+     * If an error occurred, throws {@link MlKemError}.
+     *
+     * @param pk A public key.
+     * @param seed An optional 32-octet seed for the deterministic shared secret generation.
+     * @returns A ciphertext (encapsulated public key) and a shared secret.
+     * @throws {@link MlKemError}
+     *
+     * @example The {@link MlKem768} encapsulation.
+     *
+     * ```ts
+     * // Using jsr:
+     * import { MlKem768 } from "@dajiaji/mlkem";
+     * // Using npm:
+     * // import { MlKem768 } from "mlkem"; // or "crystals-kyber-js"
+     *
+     * const kyber = new MlKem768();
+     * const [pk, sk] = await kyber.generateKeyPair();
+     * const [ct, ss] = await kyber.encap(pk);
+     * ```
+     */
+    async encap(pk, seed) {
+        await this._setup();
+        try {
+            // validate key type; the modulo is checked in `_encap`.
+            if (pk.length !== 384 * this._k + 32) {
+                throw new Error("invalid encapsulation key");
+            }
+            const m = this._getSeed(seed);
+            const [k, r] = g(m, h(pk));
+            const ct = this._encap(pk, m, r);
+            return [ct, k];
+        }
+        catch (e) {
+            throw new MlKemError(e);
+        }
     }
-
-    len = requestInterceptorChain.length;
-
-    let newConfig = config;
-
-    i = 0;
-
-    while (i < len) {
-      const onFulfilled = requestInterceptorChain[i++];
-      const onRejected = requestInterceptorChain[i++];
-      try {
-        newConfig = onFulfilled(newConfig);
-      } catch (error) {
-        onRejected.call(this, error);
-        break;
-      }
+    /**
+     * Generates a ciphertext for the public key and a shared secret.
+     *
+     * If an error occurred, throws {@link MlKemError}.
+     *
+     * @param ct A ciphertext generated by {@link encap}.
+     * @param sk A private key.
+     * @returns A shared secret.
+     * @throws {@link MlKemError}
+     *
+     * @example The {@link MlKem768} decapsulation.
+     *
+     * ```ts
+     * // Using jsr:
+     * import { MlKem768 } from "@dajiaji/mlkem";
+     * // Using npm:
+     * // import { MlKem768 } from "mlkem"; // or "crystals-kyber-js"
+     *
+     * const kyber = new MlKem768();
+     * const [pk, sk] = await kyber.generateKeyPair();
+     * const [ct, ssS] = await kyber.encap(pk);
+     * const ssR = await kyber.decap(ct, sk);
+     * // ssS === ssR
+     * ```
+     */
+    async decap(ct, sk) {
+        await this._setup();
+        try {
+            // ciphertext type check
+            if (ct.byteLength !== this._compressedUSize + this._compressedVSize) {
+                throw new Error("Invalid ct size");
+            }
+            // decapsulation key type check
+            if (sk.length !== 768 * this._k + 96) {
+                throw new Error("Invalid decapsulation key");
+            }
+            const sk2 = sk.subarray(0, this._skSize);
+            const pk = sk.subarray(this._skSize, this._skSize + this._pkSize);
+            const hpk = sk.subarray(this._skSize + this._pkSize, this._skSize + this._pkSize + 32);
+            const z = sk.subarray(this._skSize + this._pkSize + 32, this._skSize + this._pkSize + 64);
+            const m2 = this._decap(ct, sk2);
+            const [k2, r2] = g(m2, hpk);
+            const kBar = kdf(z, ct);
+            const ct2 = this._encap(pk, m2, r2);
+            return constantTimeCompare(ct, ct2) === 1 ? k2 : kBar;
+        }
+        catch (e) {
+            throw new MlKemError(e);
+        }
     }
-
-    try {
-      promise = dispatchRequest.call(this, newConfig);
-    } catch (error) {
-      return Promise.reject(error);
+    /**
+     * Sets up the MlKemBase instance by loading the necessary crypto library.
+     * If the crypto library is already loaded, this method does nothing.
+     * @returns {Promise<void>} A promise that resolves when the setup is complete.
+     */
+    async _setup() {
+        if (this._api !== undefined) {
+            return;
+        }
+        this._api = await loadCrypto();
     }
-
-    i = 0;
-    len = responseInterceptorChain.length;
-
-    while (i < len) {
-      promise = promise.then(responseInterceptorChain[i++], responseInterceptorChain[i++]);
+    /**
+     * Returns a Uint8Array seed for cryptographic operations.
+     * If no seed is provided, a random seed of length 32 bytes is generated.
+     * If a seed is provided, it must be exactly 32 bytes in length.
+     *
+     * @param seed - Optional seed for cryptographic operations.
+     * @returns A Uint8Array seed.
+     * @throws Error if the provided seed is not 32 bytes in length.
+     */
+    _getSeed(seed) {
+        if (seed == undefined) {
+            const s = new Uint8Array(32);
+            this._api.getRandomValues(s);
+            return s;
+        }
+        if (seed.byteLength !== 32) {
+            throw new Error("seed must be 32 bytes in length");
+        }
+        return seed;
     }
-
-    return promise;
-  }
-
-  getUri(config) {
-    config = mergeConfig(this.defaults, config);
-    const fullPath = buildFullPath(config.baseURL, config.url, config.allowAbsoluteUrls);
-    return buildURL(fullPath, config.params, config.paramsSerializer);
-  }
+    /**
+     * Derives a key pair from a given seed.
+     *
+     * @param seed - The seed used for key derivation.
+     * @returns An array containing the public key and secret key.
+     */
+    _deriveKeyPair(seed) {
+        const cpaSeed = seed.subarray(0, 32);
+        const z = seed.subarray(32, 64);
+        const [pk, skBody] = this._deriveCpaKeyPair(cpaSeed);
+        const pkh = h(pk);
+        const sk = new Uint8Array(this._skSize + this._pkSize + 64);
+        sk.set(skBody, 0);
+        sk.set(pk, this._skSize);
+        sk.set(pkh, this._skSize + this._pkSize);
+        sk.set(z, this._skSize + this._pkSize + 32);
+        return [pk, sk];
+    }
+    // indcpaKeyGen generates public and private keys for the CPA-secure
+    // public-key encryption scheme underlying ML-KEM.
+    /**
+     * Derives a CPA key pair using the provided CPA seed.
+     *
+     * @param cpaSeed - The CPA seed used for key derivation.
+     * @returns An array containing the public key and private key.
+     */
+    _deriveCpaKeyPair(cpaSeed) {
+        const [publicSeed, noiseSeed] = g(cpaSeed, new Uint8Array([this._k]));
+        const a = this._sampleMatrix(publicSeed, false);
+        const s = this._sampleNoise1(noiseSeed, 0, this._k);
+        const e = this._sampleNoise1(noiseSeed, this._k, this._k);
+        // perform number theoretic transform on secret s
+        for (let i = 0; i < this._k; i++) {
+            s[i] = ntt(s[i]);
+            s[i] = reduce(s[i]);
+            e[i] = ntt(e[i]);
+        }
+        // KEY COMPUTATION
+        // pk = A*s + e
+        const pk = new Array(this._k);
+        for (let i = 0; i < this._k; i++) {
+            pk[i] = polyToMont(multiply(a[i], s));
+            pk[i] = mlKemBase_add(pk[i], e[i]);
+            pk[i] = reduce(pk[i]);
+        }
+        // PUBLIC KEY
+        // turn polynomials into byte arrays
+        const pubKey = new Uint8Array(this._pkSize);
+        for (let i = 0; i < this._k; i++) {
+            pubKey.set(polyToBytes(pk[i]), i * 384);
+        }
+        // append public seed
+        pubKey.set(publicSeed, this._skSize);
+        // PRIVATE KEY
+        // turn polynomials into byte arrays
+        const privKey = new Uint8Array(this._skSize);
+        for (let i = 0; i < this._k; i++) {
+            privKey.set(polyToBytes(s[i]), i * 384);
+        }
+        return [pubKey, privKey];
+    }
+    // _encap is the encapsulation function of the CPA-secure
+    // public-key encryption scheme underlying ML-KEM.
+    /**
+     * Encapsulates a message using the ML-KEM encryption scheme.
+     *
+     * @param pk - The public key.
+     * @param msg - The message to be encapsulated.
+     * @param seed - The seed used for generating random values.
+     * @returns The encapsulated message as a Uint8Array.
+     */
+    _encap(pk, msg, seed) {
+        const tHat = new Array(this._k);
+        const pkCheck = new Uint8Array(384 * this._k); // to validate the pk modulo (see input validation at NIST draft 6.2)
+        for (let i = 0; i < this._k; i++) {
+            tHat[i] = polyFromBytes(pk.subarray(i * 384, (i + 1) * 384));
+            pkCheck.set(polyToBytes(tHat[i]), i * 384);
+        }
+        if (!equalUint8Array(pk.subarray(0, pkCheck.length), pkCheck)) {
+            throw new Error("invalid encapsulation key");
+        }
+        const rho = pk.subarray(this._skSize);
+        const a = this._sampleMatrix(rho, true);
+        const r = this._sampleNoise1(seed, 0, this._k);
+        const e1 = this._sampleNoise2(seed, this._k, this._k);
+        const e2 = this._sampleNoise2(seed, this._k * 2, 1)[0];
+        // perform number theoretic transform on random vector r
+        for (let i = 0; i < this._k; i++) {
+            r[i] = ntt(r[i]);
+            r[i] = reduce(r[i]);
+        }
+        // u = A*r + e1
+        const u = new Array(this._k);
+        for (let i = 0; i < this._k; i++) {
+            u[i] = multiply(a[i], r);
+            u[i] = nttInverse(u[i]);
+            u[i] = mlKemBase_add(u[i], e1[i]);
+            u[i] = reduce(u[i]);
+        }
+        // v = tHat*r + e2 + m
+        const m = polyFromMsg(msg);
+        let v = multiply(tHat, r);
+        v = nttInverse(v);
+        v = mlKemBase_add(v, e2);
+        v = mlKemBase_add(v, m);
+        v = reduce(v);
+        // compress
+        const ret = new Uint8Array(this._compressedUSize + this._compressedVSize);
+        this._compressU(ret.subarray(0, this._compressedUSize), u);
+        this._compressV(ret.subarray(this._compressedUSize), v);
+        return ret;
+    }
+    // indcpaDecrypt is the decryption function of the CPA-secure
+    // public-key encryption scheme underlying ML-KEM.
+    /**
+     * Decapsulates the ciphertext using the provided secret key.
+     *
+     * @param ct - The ciphertext to be decapsulated.
+     * @param sk - The secret key used for decapsulation.
+     * @returns The decapsulated message as a Uint8Array.
+     */
+    _decap(ct, sk) {
+        // extract ciphertext
+        const u = this._decompressU(ct.subarray(0, this._compressedUSize));
+        const v = this._decompressV(ct.subarray(this._compressedUSize));
+        const privateKeyPolyvec = this._polyvecFromBytes(sk);
+        for (let i = 0; i < this._k; i++) {
+            u[i] = ntt(u[i]);
+        }
+        let mp = multiply(privateKeyPolyvec, u);
+        mp = nttInverse(mp);
+        mp = subtract(v, mp);
+        mp = reduce(mp);
+        return polyToMsg(mp);
+    }
+    // generateMatrixA deterministically generates a matrix `A` (or the transpose of `A`)
+    // from a seed. Entries of the matrix are polynomials that look uniformly random.
+    // Performs rejection sampling on the output of an extendable-output function (XOF).
+    /**
+     * Generates a sample matrix based on the provided seed and transposition flag.
+     *
+     * @param seed - The seed used for generating the matrix.
+     * @param transposed - A flag indicating whether the matrix should be transposed or not.
+     * @returns The generated sample matrix.
+     */
+    _sampleMatrix(seed, transposed) {
+        const a = new Array(this._k);
+        const transpose = new Uint8Array(2);
+        for (let ctr = 0, i = 0; i < this._k; i++) {
+            a[i] = new Array(this._k);
+            for (let j = 0; j < this._k; j++) {
+                // set if transposed matrix or not
+                if (transposed) {
+                    transpose[0] = i;
+                    transpose[1] = j;
+                }
+                else {
+                    transpose[0] = j;
+                    transpose[1] = i;
+                }
+                const output = xof(seed, transpose);
+                // run rejection sampling on the output from above
+                const result = indcpaRejUniform(output.subarray(0, 504), 504, N);
+                a[i][j] = result[0]; // the result here is an NTT-representation
+                ctr = result[1]; // keeps track of index of output array from sampling function
+                while (ctr < N) { // if the polynomial hasnt been filled yet with mod q entries
+                    const outputn = output.subarray(504, 672); // take last 168 bytes of byte array from xof
+                    const result1 = indcpaRejUniform(outputn, 168, N - ctr); // run sampling function again
+                    const missing = result1[0]; // here is additional mod q polynomial coefficients
+                    const ctrn = result1[1]; // how many coefficients were accepted and are in the output
+                    // starting at last position of output array from first sampling function until 256 is reached
+                    for (let k = ctr; k < N; k++) {
+                        a[i][j][k] = missing[k - ctr]; // fill rest of array with the additional coefficients until full
+                    }
+                    ctr = ctr + ctrn; // update index
+                }
+            }
+        }
+        return a;
+    }
+    /**
+     * Generates a 2D array of noise samples.
+     *
+     * @param sigma - The noise parameter.
+     * @param offset - The offset value.
+     * @param size - The size of the array.
+     * @returns The generated 2D array of noise samples.
+     */
+    _sampleNoise1(sigma, offset, size) {
+        const r = new Array(size);
+        for (let i = 0; i < size; i++) {
+            r[i] = byteopsCbd(prf(this._eta1 * N / 4, sigma, offset), this._eta1);
+            offset++;
+        }
+        return r;
+    }
+    /**
+     * Generates a 2-dimensional array of noise samples.
+     *
+     * @param sigma - The noise parameter.
+     * @param offset - The offset value.
+     * @param size - The size of the array.
+     * @returns The generated 2-dimensional array of noise samples.
+     */
+    _sampleNoise2(sigma, offset, size) {
+        const r = new Array(size);
+        for (let i = 0; i < size; i++) {
+            r[i] = byteopsCbd(prf(this._eta2 * N / 4, sigma, offset), this._eta2);
+            offset++;
+        }
+        return r;
+    }
+    // polyvecFromBytes deserializes a vector of polynomials.
+    /**
+     * Converts a Uint8Array to a 2D array of numbers representing a polynomial vector.
+     * Each element in the resulting array represents a polynomial.
+     * @param a The Uint8Array to convert.
+     * @returns The 2D array of numbers representing the polynomial vector.
+     */
+    _polyvecFromBytes(a) {
+        const r = new Array(this._k);
+        for (let i = 0; i < this._k; i++) {
+            r[i] = polyFromBytes(a.subarray(i * 384, (i + 1) * 384));
+        }
+        return r;
+    }
+    // compressU lossily compresses and serializes a vector of polynomials.
+    /**
+     * Compresses the given array of coefficients into a Uint8Array.
+     *
+     * @param r - The output Uint8Array.
+     * @param u - The array of coefficients.
+     * @returns The compressed Uint8Array.
+     */
+    _compressU(r, u) {
+        const t = new Array(4);
+        for (let rr = 0, i = 0; i < this._k; i++) {
+            for (let j = 0; j < N / 4; j++) {
+                for (let k = 0; k < 4; k++) {
+                    // parse {0,...,3328} to {0,...,1023}
+                    t[k] = (((u[i][4 * j + k] << 10) + Q / 2) / Q) &
+                        0b1111111111;
+                }
+                // converts 4 12-bit coefficients {0,...,3328} to 5 8-bit bytes {0,...,255}
+                // 48 bits down to 40 bits per block
+                r[rr++] = utils_byte(t[0] >> 0);
+                r[rr++] = utils_byte((t[0] >> 8) | (t[1] << 2));
+                r[rr++] = utils_byte((t[1] >> 6) | (t[2] << 4));
+                r[rr++] = utils_byte((t[2] >> 4) | (t[3] << 6));
+                r[rr++] = utils_byte(t[3] >> 2);
+            }
+        }
+        return r;
+    }
+    // compressV lossily compresses and subsequently serializes a polynomial.
+    /**
+     * Compresses the given array of numbers into a Uint8Array.
+     *
+     * @param r - The Uint8Array to store the compressed values.
+     * @param v - The array of numbers to compress.
+     * @returns The compressed Uint8Array.
+     */
+    _compressV(r, v) {
+        // const r = new Uint8Array(128);
+        const t = new Uint8Array(8);
+        for (let rr = 0, i = 0; i < N / 8; i++) {
+            for (let j = 0; j < 8; j++) {
+                t[j] = utils_byte(((v[8 * i + j] << 4) + Q / 2) / Q) & 0b1111;
+            }
+            r[rr++] = t[0] | (t[1] << 4);
+            r[rr++] = t[2] | (t[3] << 4);
+            r[rr++] = t[4] | (t[5] << 4);
+            r[rr++] = t[6] | (t[7] << 4);
+        }
+        return r;
+    }
+    // decompressU de-serializes and decompresses a vector of polynomials and
+    // represents the approximate inverse of compress1. Since compression is lossy,
+    // the results of decompression will may not match the original vector of polynomials.
+    /**
+     * Decompresses a Uint8Array into a two-dimensional array of numbers.
+     *
+     * @param a The Uint8Array to decompress.
+     * @returns The decompressed two-dimensional array.
+     */
+    _decompressU(a) {
+        const r = new Array(this._k);
+        for (let i = 0; i < this._k; i++) {
+            r[i] = new Array(384);
+        }
+        const t = new Array(4);
+        for (let aa = 0, i = 0; i < this._k; i++) {
+            for (let j = 0; j < N / 4; j++) {
+                t[0] = (uint16(a[aa + 0]) >> 0) | (uint16(a[aa + 1]) << 8);
+                t[1] = (uint16(a[aa + 1]) >> 2) | (uint16(a[aa + 2]) << 6);
+                t[2] = (uint16(a[aa + 2]) >> 4) | (uint16(a[aa + 3]) << 4);
+                t[3] = (uint16(a[aa + 3]) >> 6) | (uint16(a[aa + 4]) << 2);
+                aa = aa + 5;
+                for (let k = 0; k < 4; k++) {
+                    r[i][4 * j + k] = int16((((uint32(t[k] & 0x3FF)) * (uint32(Q))) + 512) >> 10);
+                }
+            }
+        }
+        return r;
+    }
+    // decompressV de-serializes and subsequently decompresses a polynomial,
+    // representing the approximate inverse of compress2.
+    // Note that compression is lossy, and thus decompression will not match the
+    // original input.
+    /**
+     * Decompresses a Uint8Array into an array of numbers.
+     *
+     * @param a - The Uint8Array to decompress.
+     * @returns An array of numbers.
+     */
+    _decompressV(a) {
+        const r = new Array(384);
+        for (let aa = 0, i = 0; i < N / 2; i++, aa++) {
+            r[2 * i + 0] = int16(((uint16(a[aa] & 15) * uint16(Q)) + 8) >> 4);
+            r[2 * i + 1] = int16(((uint16(a[aa] >> 4) * uint16(Q)) + 8) >> 4);
+        }
+        return r;
+    }
+}
+/**
+ * Computes the hash of the input array `a` and an optional input array `b`.
+ * Returns an array containing two Uint8Arrays, representing the first 32 bytes and the next 32 bytes of the hash digest.
+ * @param a - The input array to be hashed.
+ * @param b - An optional input array to be hashed along with `a`.
+ * @returns An array containing two Uint8Arrays representing the hash digest.
+ */
+function g(a, b) {
+    const hash = sha3_512.create().update(a);
+    if (b !== undefined) {
+        hash.update(b);
+    }
+    const res = hash.digest();
+    return [res.subarray(0, 32), res.subarray(32, 64)];
+}
+/**
+ * Computes the SHA3-256 hash of the given message.
+ *
+ * @param msg - The input message as a Uint8Array.
+ * @returns The computed hash as a Uint8Array.
+ */
+function h(msg) {
+    return sha3_256.create().update(msg).digest();
+}
+/**
+ * Key Derivation Function (KDF) that takes an input array `a` and an optional input array `b`.
+ * It uses the SHAKE256 hash function to derive a 32-byte output.
+ *
+ * @param a - The input array.
+ * @param b - The optional input array.
+ * @returns The derived key as a Uint8Array.
+ */
+function kdf(a, b) {
+    const hash = shake256.create({ dkLen: 32 }).update(a);
+    if (b !== undefined) {
+        hash.update(b);
+    }
+    return hash.digest();
+}
+/**
+ * Computes the extendable-output function (XOF) using the SHAKE128 algorithm.
+ *
+ * @param seed - The seed value for the XOF.
+ * @param transpose - The transpose value for the XOF.
+ * @returns The computed XOF value as a Uint8Array.
+ */
+function xof(seed, transpose) {
+    return shake128.create({ dkLen: 672 }).update(seed).update(transpose)
+        .digest();
+}
+// polyToBytes serializes a polynomial into an array of bytes.
+/**
+ * Converts a polynomial represented by an array of numbers to a Uint8Array.
+ * Each coefficient of the polynomial is reduced modulo q.
+ *
+ * @param a - The array representing the polynomial.
+ * @returns The Uint8Array representation of the polynomial.
+ */
+function polyToBytes(a) {
+    let t0 = 0;
+    let t1 = 0;
+    const r = new Uint8Array(384);
+    const a2 = subtractQ(a); // Returns: a - q if a >= q, else a (each coefficient of the polynomial)
+    // for 0-127
+    for (let i = 0; i < N / 2; i++) {
+        // get two coefficient entries in the polynomial
+        t0 = uint16(a2[2 * i]);
+        t1 = uint16(a2[2 * i + 1]);
+        // convert the 2 coefficient into 3 bytes
+        r[3 * i + 0] = utils_byte(t0 >> 0); // byte() does mod 256 of the input (output value 0-255)
+        r[3 * i + 1] = utils_byte(t0 >> 8) | utils_byte(t1 << 4);
+        r[3 * i + 2] = utils_byte(t1 >> 4);
+    }
+    return r;
+}
+// polyFromBytes de-serialises an array of bytes into a polynomial,
+// and represents the inverse of polyToBytes.
+/**
+ * Converts a Uint8Array to an array of numbers representing a polynomial.
+ * Each element in the array represents a coefficient of the polynomial.
+ * The input array `a` should have a length of 384.
+ * The function performs bitwise operations to extract the coefficients from the input array.
+ * @param a The Uint8Array to convert to a polynomial.
+ * @returns An array of numbers representing the polynomial.
+ */
+function polyFromBytes(a) {
+    const r = new Array(384).fill(0);
+    for (let i = 0; i < N / 2; i++) {
+        r[2 * i] = int16(((uint16(a[3 * i + 0]) >> 0) | (uint16(a[3 * i + 1]) << 8)) & 0xFFF);
+        r[2 * i + 1] = int16(((uint16(a[3 * i + 1]) >> 4) | (uint16(a[3 * i + 2]) << 4)) & 0xFFF);
+    }
+    return r;
+}
+// polyToMsg converts a polynomial to a 32-byte message
+// and represents the inverse of polyFromMsg.
+/**
+ * Converts a polynomial to a message represented as a Uint8Array.
+ * @param a - The polynomial to convert.
+ * @returns The message as a Uint8Array.
+ */
+function polyToMsg(a) {
+    const msg = new Uint8Array(32);
+    let t;
+    const a2 = subtractQ(a);
+    for (let i = 0; i < N / 8; i++) {
+        msg[i] = 0;
+        for (let j = 0; j < 8; j++) {
+            t = (((uint16(a2[8 * i + j]) << 1) + uint16(Q / 2)) /
+                uint16(Q)) & 1;
+            msg[i] |= utils_byte(t << j);
+        }
+    }
+    return msg;
+}
+// polyFromMsg converts a 32-byte message to a polynomial.
+/**
+ * Converts a Uint8Array message to an array of numbers representing a polynomial.
+ * Each element in the array is an int16 (0-65535).
+ *
+ * @param msg - The Uint8Array message to convert.
+ * @returns An array of numbers representing the polynomial.
+ */
+function polyFromMsg(msg) {
+    const r = new Array(384).fill(0); // each element is int16 (0-65535)
+    let mask; // int16
+    for (let i = 0; i < N / 8; i++) {
+        for (let j = 0; j < 8; j++) {
+            mask = -1 * int16((msg[i] >> j) & 1);
+            r[8 * i + j] = mask & int16((Q + 1) / 2);
+        }
+    }
+    return r;
+}
+// indcpaRejUniform runs rejection sampling on uniform random bytes
+// to generate uniform random integers modulo `Q`.
+/**
+ * Generates an array of random numbers from a given buffer, rejecting values greater than a specified threshold.
+ *
+ * @param buf - The input buffer containing random bytes.
+ * @param bufl - The length of the input buffer.
+ * @param len - The desired length of the output array.
+ * @returns An array of random numbers and the actual length of the output array.
+ */
+function indcpaRejUniform(buf, bufl, len) {
+    const r = new Array(384).fill(0);
+    let ctr = 0;
+    let val0, val1; // d1, d2 in kyber documentation
+    for (let pos = 0; ctr < len && pos + 3 <= bufl;) {
+        // compute d1 and d2
+        val0 = (uint16((buf[pos]) >> 0) | (uint16(buf[pos + 1]) << 8)) & 0xFFF;
+        val1 = (uint16((buf[pos + 1]) >> 4) | (uint16(buf[pos + 2]) << 4)) & 0xFFF;
+        // increment input buffer index by 3
+        pos = pos + 3;
+        // if d1 is less than 3329
+        if (val0 < Q) {
+            // assign to d1
+            r[ctr] = val0;
+            // increment position of output array
+            ctr = ctr + 1;
+        }
+        if (ctr < len && val1 < Q) {
+            r[ctr] = val1;
+            ctr = ctr + 1;
+        }
+    }
+    return [r, ctr];
+}
+// byteopsCbd computes a polynomial with coefficients distributed
+// according to a centered binomial distribution with parameter PARAMS_ETA,
+// given an array of uniformly random bytes.
+/**
+ * Converts a Uint8Array buffer to an array of numbers using the CBD operation.
+ * @param buf - The input Uint8Array buffer.
+ * @param eta - The value used in the CBD operation.
+ * @returns An array of numbers obtained from the CBD operation.
+ */
+function byteopsCbd(buf, eta) {
+    let t, d;
+    let a, b;
+    const r = new Array(384).fill(0);
+    for (let i = 0; i < N / 8; i++) {
+        t = byteopsLoad32(buf.subarray(4 * i, buf.length));
+        d = t & 0x55555555;
+        d = d + ((t >> 1) & 0x55555555);
+        for (let j = 0; j < 8; j++) {
+            a = int16((d >> (4 * j + 0)) & 0x3);
+            b = int16((d >> (4 * j + eta)) & 0x3);
+            r[8 * i + j] = a - b;
+        }
+    }
+    return r;
+}
+// ntt performs an inplace number-theoretic transform (NTT) in `Rq`.
+// The input is in standard order, the output is in bit-reversed order.
+/**
+ * Performs the Number Theoretic Transform (NTT) on an array of numbers.
+ *
+ * @param r - The input array of numbers.
+ * @returns The transformed array of numbers.
+ */
+function ntt(r) {
+    // 128, 64, 32, 16, 8, 4, 2
+    for (let j = 0, k = 1, l = 128; l >= 2; l >>= 1) {
+        // 0,
+        for (let start = 0; start < 256; start = j + l) {
+            const zeta = NTT_ZETAS[k];
+            k = k + 1;
+            // for each element in the subsections (128, 64, 32, 16, 8, 4, 2) starting at an offset
+            for (j = start; j < start + l; j++) {
+                // compute the modular multiplication of the zeta and each element in the subsection
+                const t = nttFqMul(zeta, r[j + l]); // t is mod q
+                // overwrite each element in the subsection as the opposite subsection element minus t
+                r[j + l] = r[j] - t;
+                // add t back again to the opposite subsection
+                r[j] = r[j] + t;
+            }
+        }
+    }
+    return r;
+}
+// nttFqMul performs multiplication followed by Montgomery reduction
+// and returns a 16-bit integer congruent to `a*b*R^{-1} mod Q`.
+/**
+ * Performs an NTT (Number Theoretic Transform) multiplication on two numbers in Fq.
+ * @param a The first number.
+ * @param b The second number.
+ * @returns The result of the NTT multiplication.
+ */
+function nttFqMul(a, b) {
+    return byteopsMontgomeryReduce(a * b);
+}
+// reduce applies Barrett reduction to all coefficients of a polynomial.
+/**
+ * Reduces each element in the given array using the barrett function.
+ *
+ * @param r - The array to be reduced.
+ * @returns The reduced array.
+ */
+function reduce(r) {
+    for (let i = 0; i < N; i++) {
+        r[i] = barrett(r[i]);
+    }
+    return r;
+}
+// barrett computes a Barrett reduction; given
+// a integer `a`, returns a integer congruent to
+// `a mod Q` in {0,...,Q}.
+/**
+ * Performs the Barrett reduction algorithm on the given number.
+ *
+ * @param a - The number to be reduced.
+ * @returns The result of the reduction.
+ */
+function barrett(a) {
+    const v = ((1 << 24) + Q / 2) / Q;
+    let t = v * a >> 24;
+    t = t * Q;
+    return a - t;
+}
+// byteopsMontgomeryReduce computes a Montgomery reduction; given
+// a 32-bit integer `a`, returns `a * R^-1 mod Q` where `R=2^16`.
+/**
+ * Performs Montgomery reduction on a given number.
+ * @param a - The number to be reduced.
+ * @returns The reduced number.
+ */
+function byteopsMontgomeryReduce(a) {
+    const u = int16(int32(a) * Q_INV);
+    let t = u * Q;
+    t = a - t;
+    t >>= 16;
+    return int16(t);
+}
+// polyToMont performs the in-place conversion of all coefficients
+// of a polynomial from the normal domain to the Montgomery domain.
+/**
+ * Converts a polynomial to the Montgomery domain.
+ *
+ * @param r - The polynomial to be converted.
+ * @returns The polynomial in the Montgomery domain.
+ */
+function polyToMont(r) {
+    // let f = int16(((uint64(1) << 32)) % uint64(Q));
+    const f = 1353; // if Q changes then this needs to be updated
+    for (let i = 0; i < N; i++) {
+        r[i] = byteopsMontgomeryReduce(int32(r[i]) * int32(f));
+    }
+    return r;
+}
+// pointwise-multiplies elements of polynomial-vectors
+// `a` and `b`, accumulates the results into `r`, and then multiplies by `2^-16`.
+/**
+ * Multiplies two matrices element-wise and returns the result.
+ * @param a - The first matrix.
+ * @param b - The second matrix.
+ * @returns The resulting matrix after element-wise multiplication.
+ */
+function multiply(a, b) {
+    let r = polyBaseMulMontgomery(a[0], b[0]);
+    let t;
+    for (let i = 1; i < a.length; i++) {
+        t = polyBaseMulMontgomery(a[i], b[i]);
+        r = mlKemBase_add(r, t);
+    }
+    return reduce(r);
+}
+// polyBaseMulMontgomery performs the multiplication of two polynomials
+// in the number-theoretic transform (NTT) domain.
+/**
+ * Performs polynomial base multiplication in Montgomery domain.
+ * @param a - The first polynomial array.
+ * @param b - The second polynomial array.
+ * @returns The result of the polynomial base multiplication.
+ */
+function polyBaseMulMontgomery(a, b) {
+    let rx, ry;
+    for (let i = 0; i < N / 4; i++) {
+        rx = nttBaseMul(a[4 * i + 0], a[4 * i + 1], b[4 * i + 0], b[4 * i + 1], NTT_ZETAS[64 + i]);
+        ry = nttBaseMul(a[4 * i + 2], a[4 * i + 3], b[4 * i + 2], b[4 * i + 3], -NTT_ZETAS[64 + i]);
+        a[4 * i + 0] = rx[0];
+        a[4 * i + 1] = rx[1];
+        a[4 * i + 2] = ry[0];
+        a[4 * i + 3] = ry[1];
+    }
+    return a;
+}
+// nttBaseMul performs the multiplication of polynomials
+// in `Zq[X]/(X^2-zeta)`. Used for multiplication of elements
+// in `Rq` in the number-theoretic transformation domain.
+/**
+ * Performs NTT base multiplication.
+ *
+ * @param a0 - The first coefficient of the first polynomial.
+ * @param a1 - The second coefficient of the first polynomial.
+ * @param b0 - The first coefficient of the second polynomial.
+ * @param b1 - The second coefficient of the second polynomial.
+ * @param zeta - The zeta value used in the multiplication.
+ * @returns An array containing the result of the multiplication.
+ */
+function nttBaseMul(a0, a1, b0, b1, zeta) {
+    const r = new Array(2);
+    r[0] = nttFqMul(a1, b1);
+    r[0] = nttFqMul(r[0], zeta);
+    r[0] += nttFqMul(a0, b0);
+    r[1] = nttFqMul(a0, b1);
+    r[1] += nttFqMul(a1, b0);
+    return r;
+}
+// adds two polynomials.
+/**
+ * Adds two arrays element-wise.
+ * @param a - The first array.
+ * @param b - The second array.
+ * @returns The resulting array after element-wise addition.
+ */
+function mlKemBase_add(a, b) {
+    const c = new Array(384);
+    for (let i = 0; i < N; i++) {
+        c[i] = a[i] + b[i];
+    }
+    return c;
+}
+// subtracts two polynomials.
+/**
+ * Subtracts the elements of array b from array a.
+ *
+ * @param a - The array from which to subtract.
+ * @param b - The array to subtract.
+ * @returns The resulting array after subtraction.
+ */
+function subtract(a, b) {
+    for (let i = 0; i < N; i++) {
+        a[i] -= b[i];
+    }
+    return a;
+}
+// nttInverse performs an inplace inverse number-theoretic transform (NTT)
+// in `Rq` and multiplication by Montgomery factor 2^16.
+// The input is in bit-reversed order, the output is in standard order.
+/**
+ * Performs the inverse Number Theoretic Transform (NTT) on the given array.
+ *
+ * @param r - The input array to perform the inverse NTT on.
+ * @returns The array after performing the inverse NTT.
+ */
+function nttInverse(r) {
+    let j = 0;
+    for (let k = 0, l = 2; l <= 128; l <<= 1) {
+        for (let start = 0; start < 256; start = j + l) {
+            const zeta = NTT_ZETAS_INV[k];
+            k = k + 1;
+            for (j = start; j < start + l; j++) {
+                const t = r[j];
+                r[j] = barrett(t + r[j + l]);
+                r[j + l] = t - r[j + l];
+                r[j + l] = nttFqMul(zeta, r[j + l]);
+            }
+        }
+    }
+    for (j = 0; j < 256; j++) {
+        r[j] = nttFqMul(r[j], NTT_ZETAS_INV[127]);
+    }
+    return r;
+}
+// subtractQ applies the conditional subtraction of q to each coefficient of a polynomial.
+// if a is 3329 then convert to 0
+// Returns:     a - q if a >= q, else a
+/**
+ * Subtracts the value of Q from each element in the given array.
+ * The result should be a negative integer for each element.
+ * If the leftmost bit is 0 (positive number), the value of Q is added back.
+ *
+ * @param r - The array to subtract Q from.
+ * @returns The resulting array after the subtraction.
+ */
+function subtractQ(r) {
+    for (let i = 0; i < N; i++) {
+        r[i] -= Q; // should result in a negative integer
+        // push left most signed bit to right most position
+        // javascript does bitwise operations in signed 32 bit
+        // add q back again if left most bit was 0 (positive number)
+        r[i] += (r[i] >> 31) & Q;
+    }
+    return r;
 }
 
-// Provide aliases for supported request methods
-utils.forEach(['delete', 'get', 'head', 'options'], function forEachMethodNoData(method) {
-  /*eslint func-names:0*/
-  Axios.prototype[method] = function(url, config) {
-    return this.request(mergeConfig(config || {}, {
-      method,
-      url,
-      data: (config || {}).data
-    }));
-  };
-});
-
-utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
-  /*eslint func-names:0*/
-
-  function generateHTTPMethod(isForm) {
-    return function httpMethod(url, data, config) {
-      return this.request(mergeConfig(config || {}, {
-        method,
-        headers: isForm ? {
-          'Content-Type': 'multipart/form-data'
-        } : {},
-        url,
-        data
-      }));
-    };
-  }
-
-  Axios.prototype[method] = generateHTTPMethod();
-
-  Axios.prototype[method + 'Form'] = generateHTTPMethod(true);
-});
-
-/* harmony default export */ const core_Axios = (Axios);
-
-;// ./node_modules/axios/lib/cancel/CancelToken.js
-
+;// ./node_modules/crystals-kyber-js/esm/src/mlKem512.js
+/**
+ * This implementation is based on https://github.com/antontutoveanu/crystals-kyber-javascript,
+ * which was deveploped under the MIT licence below:
+ * https://github.com/antontutoveanu/crystals-kyber-javascript/blob/main/LICENSE
+ */
 
 
 
 /**
- * A `CancelToken` is an object that can be used to request cancellation of an operation.
+ * Represents the MlKem512 class.
  *
- * @param {Function} executor The executor function.
+ * This class extends the MlKemBase class and provides specific implementation for MlKem512.
  *
- * @returns {CancelToken}
+ * @remarks
+ *
+ * MlKem512 is a specific implementation of the ML-KEM key encapsulation mechanism.
+ *
+ * @example
+ *
+ * ```ts
+ * // Using jsr:
+ * import { MlKem512 } from "@dajiaji/mlkem";
+ * // Using npm:
+ * // import { MlKem512 } from "mlkem"; // or "crystals-kyber-js"
+ *
+ * const recipient = new MlKem512();
+ * const [pkR, skR] = await recipient.generateKeyPair();
+ *
+ * const sender = new MlKem512();
+ * const [ct, ssS] = await sender.encap(pkR);
+ *
+ * const ssR = await recipient.decap(ct, skR);
+ * // ssS === ssR
+ * ```
  */
-class CancelToken {
-  constructor(executor) {
-    if (typeof executor !== 'function') {
-      throw new TypeError('executor must be a function.');
+class MlKem512 extends MlKemBase {
+    /**
+     * Constructs a new instance of the MlKem512 class.
+     */
+    constructor() {
+        super();
+        Object.defineProperty(this, "_k", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 2
+        });
+        Object.defineProperty(this, "_du", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 10
+        });
+        Object.defineProperty(this, "_dv", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 4
+        });
+        Object.defineProperty(this, "_eta1", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 3
+        });
+        Object.defineProperty(this, "_eta2", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 2
+        });
+        this._skSize = 12 * this._k * N / 8;
+        this._pkSize = this._skSize + 32;
+        this._compressedUSize = this._k * this._du * N / 8;
+        this._compressedVSize = this._dv * N / 8;
     }
-
-    let resolvePromise;
-
-    this.promise = new Promise(function promiseExecutor(resolve) {
-      resolvePromise = resolve;
-    });
-
-    const token = this;
-
-    // eslint-disable-next-line func-names
-    this.promise.then(cancel => {
-      if (!token._listeners) return;
-
-      let i = token._listeners.length;
-
-      while (i-- > 0) {
-        token._listeners[i](cancel);
-      }
-      token._listeners = null;
-    });
-
-    // eslint-disable-next-line func-names
-    this.promise.then = onfulfilled => {
-      let _resolve;
-      // eslint-disable-next-line func-names
-      const promise = new Promise(resolve => {
-        token.subscribe(resolve);
-        _resolve = resolve;
-      }).then(onfulfilled);
-
-      promise.cancel = function reject() {
-        token.unsubscribe(_resolve);
-      };
-
-      return promise;
-    };
-
-    executor(function cancel(message, config, request) {
-      if (token.reason) {
-        // Cancellation has already been requested
-        return;
-      }
-
-      token.reason = new cancel_CanceledError(message, config, request);
-      resolvePromise(token.reason);
-    });
-  }
-
-  /**
-   * Throws a `CanceledError` if cancellation has been requested.
-   */
-  throwIfRequested() {
-    if (this.reason) {
-      throw this.reason;
+    /**
+     * Samples a vector of polynomials from a seed.
+     * @internal
+     * @param sigma - The seed.
+     * @param offset - The offset.
+     * @param size - The size.
+     * @returns The sampled vector of polynomials.
+     */
+    _sampleNoise1(sigma, offset, size) {
+        const r = new Array(size);
+        for (let i = 0; i < size; i++) {
+            r[i] = mlKem512_byteopsCbd(prf(this._eta1 * N / 4, sigma, offset), this._eta1);
+            offset++;
+        }
+        return r;
     }
-  }
-
-  /**
-   * Subscribe to the cancel signal
-   */
-
-  subscribe(listener) {
-    if (this.reason) {
-      listener(this.reason);
-      return;
+}
+/**
+ * Performs the byte operations for the Cbd function.
+ *
+ * @param buf - The input buffer.
+ * @param eta - The value of eta.
+ * @returns An array of numbers representing the result of the byte operations.
+ */
+function mlKem512_byteopsCbd(buf, eta) {
+    let t, d;
+    let a, b;
+    const r = new Array(384).fill(0);
+    for (let i = 0; i < N / 4; i++) {
+        t = byteopsLoad24(buf.subarray(3 * i, buf.length));
+        d = t & 0x00249249;
+        d = d + ((t >> 1) & 0x00249249);
+        d = d + ((t >> 2) & 0x00249249);
+        for (let j = 0; j < 4; j++) {
+            a = int16((d >> (6 * j + 0)) & 0x7);
+            b = int16((d >> (6 * j + eta)) & 0x7);
+            r[4 * i + j] = a - b;
+        }
     }
-
-    if (this._listeners) {
-      this._listeners.push(listener);
-    } else {
-      this._listeners = [listener];
-    }
-  }
-
-  /**
-   * Unsubscribe from the cancel signal
-   */
-
-  unsubscribe(listener) {
-    if (!this._listeners) {
-      return;
-    }
-    const index = this._listeners.indexOf(listener);
-    if (index !== -1) {
-      this._listeners.splice(index, 1);
-    }
-  }
-
-  toAbortSignal() {
-    const controller = new AbortController();
-
-    const abort = (err) => {
-      controller.abort(err);
-    };
-
-    this.subscribe(abort);
-
-    controller.signal.unsubscribe = () => this.unsubscribe(abort);
-
-    return controller.signal;
-  }
-
-  /**
-   * Returns an object that contains a new `CancelToken` and a function that, when called,
-   * cancels the `CancelToken`.
-   */
-  static source() {
-    let cancel;
-    const token = new CancelToken(function executor(c) {
-      cancel = c;
-    });
-    return {
-      token,
-      cancel
-    };
-  }
+    return r;
 }
 
-/* harmony default export */ const cancel_CancelToken = (CancelToken);
-
-;// ./node_modules/axios/lib/helpers/spread.js
+;// ./node_modules/crystals-kyber-js/esm/src/mlKem768.js
+/**
+ * This implementation is based on https://github.com/antontutoveanu/crystals-kyber-javascript,
+ * which was deveploped under the MIT licence below:
+ * https://github.com/antontutoveanu/crystals-kyber-javascript/blob/main/LICENSE
+ */
 
 
 /**
- * Syntactic sugar for invoking a function and expanding an array for arguments.
+ * Represents the MlKem768 class, which extends the MlKemBase class.
  *
- * Common use case would be to use `Function.prototype.apply`.
+ * This class extends the MlKemBase class and provides specific implementation for MlKem768.
  *
- *  ```js
- *  function f(x, y, z) {}
- *  var args = [1, 2, 3];
- *  f.apply(null, args);
- *  ```
+ * @remarks
  *
- * With `spread` this example can be re-written.
+ * MlKem768 is a specific implementation of the ML-KEM key encapsulation mechanism.
  *
- *  ```js
- *  spread(function(x, y, z) {})([1, 2, 3]);
- *  ```
+ * @example
  *
- * @param {Function} callback
+ * ```ts
+ * // Using jsr:
+ * import { MlKem768 } from "@dajiaji/mlkem";
+ * // Using npm:
+ * // import { MlKem768 } from "mlkem"; // or "crystals-kyber-js"
  *
- * @returns {Function}
+ * const recipient = new MlKem768();
+ * const [pkR, skR] = await recipient.generateKeyPair();
+ *
+ * const sender = new MlKem768();
+ * const [ct, ssS] = await sender.encap(pkR);
+ *
+ * const ssR = await recipient.decap(ct, skR);
+ * // ssS === ssR
+ * ```
  */
-function spread(callback) {
-  return function wrap(arr) {
-    return callback.apply(null, arr);
-  };
+class MlKem768 extends MlKemBase {
+    constructor() {
+        super();
+        Object.defineProperty(this, "_k", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 3
+        });
+        Object.defineProperty(this, "_du", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 10
+        });
+        Object.defineProperty(this, "_dv", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 4
+        });
+        Object.defineProperty(this, "_eta1", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 2
+        });
+        Object.defineProperty(this, "_eta2", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 2
+        });
+        this._skSize = 12 * this._k * N / 8;
+        this._pkSize = this._skSize + 32;
+        this._compressedUSize = this._k * this._du * N / 8;
+        this._compressedVSize = this._dv * N / 8;
+    }
 }
 
-;// ./node_modules/axios/lib/helpers/isAxiosError.js
-
+;// ./node_modules/crystals-kyber-js/esm/src/mlKem1024.js
+/**
+ * This implementation is based on https://github.com/antontutoveanu/crystals-kyber-javascript,
+ * which was deveploped under the MIT licence below:
+ * https://github.com/antontutoveanu/crystals-kyber-javascript/blob/main/LICENSE
+ */
 
 
 
 /**
- * Determines whether the payload is an error thrown by Axios
+ * Represents the MlKem1024 class, which extends the MlKemBase class.
  *
- * @param {*} payload The value to test
+ * This class extends the MlKemBase class and provides specific implementation for MlKem1024.
  *
- * @returns {boolean} True if the payload is an error thrown by Axios, otherwise false
+ * @remarks
+ *
+ * MlKem1024 is a specific implementation of the ML-KEM key encapsulation mechanism.
+ *
+ * @example
+ *
+ * ```ts
+ * // Using jsr:
+ * import { MlKem1024 } from "@dajiaji/mlkem";
+ * // Using npm:
+ * // import { MlKem1024 } from "mlkem"; // or "crystals-kyber-js"
+ *
+ * const recipient = new MlKem1024();
+ * const [pkR, skR] = await recipient.generateKeyPair();
+ *
+ * const sender = new MlKem1024();
+ * const [ct, ssS] = await sender.encap(pkR);
+ *
+ * const ssR = await recipient.decap(ct, skR);
+ * // ssS === ssR
+ * ```
  */
-function isAxiosError(payload) {
-  return utils.isObject(payload) && (payload.isAxiosError === true);
+class MlKem1024 extends MlKemBase {
+    /**
+     * Constructs a new instance of the MlKem1024 class.
+     */
+    constructor() {
+        super();
+        Object.defineProperty(this, "_k", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 4
+        });
+        Object.defineProperty(this, "_du", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 11
+        });
+        Object.defineProperty(this, "_dv", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 5
+        });
+        Object.defineProperty(this, "_eta1", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 2
+        });
+        Object.defineProperty(this, "_eta2", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 2
+        });
+        this._skSize = 12 * this._k * N / 8;
+        this._pkSize = this._skSize + 32;
+        this._compressedUSize = this._k * this._du * N / 8;
+        this._compressedVSize = this._dv * N / 8;
+    }
+    // compressU lossily compresses and serializes a vector of polynomials.
+    /**
+     * Lossily compresses and serializes a vector of polynomials.
+     *
+     * @param u - The vector of polynomials to compress.
+     * @returns The compressed and serialized data as a Uint8Array.
+     */
+    _compressU(r, u) {
+        const t = new Array(8);
+        for (let rr = 0, i = 0; i < this._k; i++) {
+            for (let j = 0; j < N / 8; j++) {
+                for (let k = 0; k < 8; k++) {
+                    t[k] = uint16((((uint32(u[i][8 * j + k]) << 11) + uint32(Q / 2)) /
+                        uint32(Q)) & 0x7ff);
+                }
+                r[rr++] = utils_byte(t[0] >> 0);
+                r[rr++] = utils_byte((t[0] >> 8) | (t[1] << 3));
+                r[rr++] = utils_byte((t[1] >> 5) | (t[2] << 6));
+                r[rr++] = utils_byte(t[2] >> 2);
+                r[rr++] = utils_byte((t[2] >> 10) | (t[3] << 1));
+                r[rr++] = utils_byte((t[3] >> 7) | (t[4] << 4));
+                r[rr++] = utils_byte((t[4] >> 4) | (t[5] << 7));
+                r[rr++] = utils_byte(t[5] >> 1);
+                r[rr++] = utils_byte((t[5] >> 9) | (t[6] << 2));
+                r[rr++] = utils_byte((t[6] >> 6) | (t[7] << 5));
+                r[rr++] = utils_byte(t[7] >> 3);
+            }
+        }
+        return r;
+    }
+    // compressV lossily compresses and subsequently serializes a polynomial.
+    /**
+     * Lossily compresses and serializes a polynomial.
+     *
+     * @param r - The output buffer to store the compressed data.
+     * @param v - The polynomial to compress.
+     * @returns The compressed and serialized data as a Uint8Array.
+     */
+    _compressV(r, v) {
+        const t = new Uint8Array(8);
+        for (let rr = 0, i = 0; i < N / 8; i++) {
+            for (let j = 0; j < 8; j++) {
+                t[j] = utils_byte(((uint32(v[8 * i + j]) << 5) + uint32(Q / 2)) / uint32(Q)) & 31;
+            }
+            r[rr++] = utils_byte((t[0] >> 0) | (t[1] << 5));
+            r[rr++] = utils_byte((t[1] >> 3) | (t[2] << 2) | (t[3] << 7));
+            r[rr++] = utils_byte((t[3] >> 1) | (t[4] << 4));
+            r[rr++] = utils_byte((t[4] >> 4) | (t[5] << 1) | (t[6] << 6));
+            r[rr++] = utils_byte((t[6] >> 2) | (t[7] << 3));
+        }
+        return r;
+    }
+    // decompressU de-serializes and decompresses a vector of polynomials and
+    // represents the approximate inverse of compress1. Since compression is lossy,
+    // the results of decompression will may not match the original vector of polynomials.
+    /**
+     * Deserializes and decompresses a vector of polynomials.
+     * This is the approximate inverse of the `_compressU` method.
+     * Since compression is lossy, the decompressed data may not match the original vector of polynomials.
+     *
+     * @param a - The compressed and serialized data as a Uint8Array.
+     * @returns The decompressed vector of polynomials.
+     */
+    _decompressU(a) {
+        const r = new Array(this._k);
+        for (let i = 0; i < this._k; i++) {
+            r[i] = new Array(384);
+        }
+        const t = new Array(8);
+        for (let aa = 0, i = 0; i < this._k; i++) {
+            for (let j = 0; j < N / 8; j++) {
+                t[0] = (uint16(a[aa + 0]) >> 0) | (uint16(a[aa + 1]) << 8);
+                t[1] = (uint16(a[aa + 1]) >> 3) | (uint16(a[aa + 2]) << 5);
+                t[2] = (uint16(a[aa + 2]) >> 6) | (uint16(a[aa + 3]) << 2) |
+                    (uint16(a[aa + 4]) << 10);
+                t[3] = (uint16(a[aa + 4]) >> 1) | (uint16(a[aa + 5]) << 7);
+                t[4] = (uint16(a[aa + 5]) >> 4) | (uint16(a[aa + 6]) << 4);
+                t[5] = (uint16(a[aa + 6]) >> 7) | (uint16(a[aa + 7]) << 1) |
+                    (uint16(a[aa + 8]) << 9);
+                t[6] = (uint16(a[aa + 8]) >> 2) | (uint16(a[aa + 9]) << 6);
+                t[7] = (uint16(a[aa + 9]) >> 5) | (uint16(a[aa + 10]) << 3);
+                aa = aa + 11;
+                for (let k = 0; k < 8; k++) {
+                    r[i][8 * j + k] = (uint32(t[k] & 0x7FF) * Q + 1024) >> 11;
+                }
+            }
+        }
+        return r;
+    }
+    // decompressV de-serializes and subsequently decompresses a polynomial,
+    // representing the approximate inverse of compress2.
+    // Note that compression is lossy, and thus decompression will not match the
+    // original input.
+    /**
+     * Decompresses a given polynomial, representing the approximate inverse of
+     * compress2, in Uint8Array into an array of numbers.
+     *
+     * Note that compression is lossy, and thus decompression will not match the
+     * original input.
+     *
+     * @param a - The Uint8Array to decompress.
+     * @returns An array of numbers obtained from the decompression process.
+     */
+    _decompressV(a) {
+        const r = new Array(384);
+        const t = new Array(8);
+        for (let aa = 0, i = 0; i < N / 8; i++) {
+            t[0] = a[aa + 0] >> 0;
+            t[1] = (a[aa + 0] >> 5) | (a[aa + 1] << 3);
+            t[2] = a[aa + 1] >> 2;
+            t[3] = (a[aa + 1] >> 7) | (a[aa + 2] << 1);
+            t[4] = (a[aa + 2] >> 4) | (a[aa + 3] << 4);
+            t[5] = a[aa + 3] >> 1;
+            t[6] = (a[aa + 3] >> 6) | (a[aa + 4] << 2);
+            t[7] = a[aa + 4] >> 3;
+            aa = aa + 5;
+            for (let j = 0; j < 8; j++) {
+                r[8 * i + j] = int16(((uint32(t[j] & 31) * uint32(Q)) + 16) >> 5);
+            }
+        }
+        return r;
+    }
 }
 
-;// ./node_modules/axios/lib/helpers/HttpStatusCode.js
-const HttpStatusCode = {
-  Continue: 100,
-  SwitchingProtocols: 101,
-  Processing: 102,
-  EarlyHints: 103,
-  Ok: 200,
-  Created: 201,
-  Accepted: 202,
-  NonAuthoritativeInformation: 203,
-  NoContent: 204,
-  ResetContent: 205,
-  PartialContent: 206,
-  MultiStatus: 207,
-  AlreadyReported: 208,
-  ImUsed: 226,
-  MultipleChoices: 300,
-  MovedPermanently: 301,
-  Found: 302,
-  SeeOther: 303,
-  NotModified: 304,
-  UseProxy: 305,
-  Unused: 306,
-  TemporaryRedirect: 307,
-  PermanentRedirect: 308,
-  BadRequest: 400,
-  Unauthorized: 401,
-  PaymentRequired: 402,
-  Forbidden: 403,
-  NotFound: 404,
-  MethodNotAllowed: 405,
-  NotAcceptable: 406,
-  ProxyAuthenticationRequired: 407,
-  RequestTimeout: 408,
-  Conflict: 409,
-  Gone: 410,
-  LengthRequired: 411,
-  PreconditionFailed: 412,
-  PayloadTooLarge: 413,
-  UriTooLong: 414,
-  UnsupportedMediaType: 415,
-  RangeNotSatisfiable: 416,
-  ExpectationFailed: 417,
-  ImATeapot: 418,
-  MisdirectedRequest: 421,
-  UnprocessableEntity: 422,
-  Locked: 423,
-  FailedDependency: 424,
-  TooEarly: 425,
-  UpgradeRequired: 426,
-  PreconditionRequired: 428,
-  TooManyRequests: 429,
-  RequestHeaderFieldsTooLarge: 431,
-  UnavailableForLegalReasons: 451,
-  InternalServerError: 500,
-  NotImplemented: 501,
-  BadGateway: 502,
-  ServiceUnavailable: 503,
-  GatewayTimeout: 504,
-  HttpVersionNotSupported: 505,
-  VariantAlsoNegotiates: 506,
-  InsufficientStorage: 507,
-  LoopDetected: 508,
-  NotExtended: 510,
-  NetworkAuthenticationRequired: 511,
+;// ./node_modules/crystals-kyber-js/esm/mod.js
+
+
+
+
+
+
+;// ./node_modules/base64-arraybuffer/dist/base64-arraybuffer.es5.js
+/*
+ * base64-arraybuffer 1.0.2 <https://github.com/niklasvh/base64-arraybuffer>
+ * Copyright (c) 2022 Niklas von Hertzen <https://hertzen.com>
+ * Released under MIT License
+ */
+var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+// Use a lookup table to find the index.
+var lookup = typeof Uint8Array === 'undefined' ? [] : new Uint8Array(256);
+for (var i = 0; i < chars.length; i++) {
+    lookup[chars.charCodeAt(i)] = i;
+}
+var encode = function (arraybuffer) {
+    var bytes = new Uint8Array(arraybuffer), i, len = bytes.length, base64 = '';
+    for (i = 0; i < len; i += 3) {
+        base64 += chars[bytes[i] >> 2];
+        base64 += chars[((bytes[i] & 3) << 4) | (bytes[i + 1] >> 4)];
+        base64 += chars[((bytes[i + 1] & 15) << 2) | (bytes[i + 2] >> 6)];
+        base64 += chars[bytes[i + 2] & 63];
+    }
+    if (len % 3 === 2) {
+        base64 = base64.substring(0, base64.length - 1) + '=';
+    }
+    else if (len % 3 === 1) {
+        base64 = base64.substring(0, base64.length - 2) + '==';
+    }
+    return base64;
+};
+var decode = function (base64) {
+    var bufferLength = base64.length * 0.75, len = base64.length, i, p = 0, encoded1, encoded2, encoded3, encoded4;
+    if (base64[base64.length - 1] === '=') {
+        bufferLength--;
+        if (base64[base64.length - 2] === '=') {
+            bufferLength--;
+        }
+    }
+    var arraybuffer = new ArrayBuffer(bufferLength), bytes = new Uint8Array(arraybuffer);
+    for (i = 0; i < len; i += 4) {
+        encoded1 = lookup[base64.charCodeAt(i)];
+        encoded2 = lookup[base64.charCodeAt(i + 1)];
+        encoded3 = lookup[base64.charCodeAt(i + 2)];
+        encoded4 = lookup[base64.charCodeAt(i + 3)];
+        bytes[p++] = (encoded1 << 2) | (encoded2 >> 4);
+        bytes[p++] = ((encoded2 & 15) << 4) | (encoded3 >> 2);
+        bytes[p++] = ((encoded3 & 3) << 6) | (encoded4 & 63);
+    }
+    return arraybuffer;
 };
 
-Object.entries(HttpStatusCode).forEach(([key, value]) => {
-  HttpStatusCode[value] = key;
-});
 
-/* harmony default export */ const helpers_HttpStatusCode = (HttpStatusCode);
+//# sourceMappingURL=base64-arraybuffer.es5.js.map
 
-;// ./node_modules/axios/lib/axios.js
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * Create an instance of Axios
- *
- * @param {Object} defaultConfig The default config for the instance
- *
- * @returns {Axios} A new instance of Axios
- */
-function createInstance(defaultConfig) {
-  const context = new core_Axios(defaultConfig);
-  const instance = bind(core_Axios.prototype.request, context);
-
-  // Copy axios.prototype to instance
-  utils.extend(instance, core_Axios.prototype, context, {allOwnKeys: true});
-
-  // Copy context to instance
-  utils.extend(instance, context, null, {allOwnKeys: true});
-
-  // Factory for creating new instances
-  instance.create = function create(instanceConfig) {
-    return createInstance(mergeConfig(defaultConfig, instanceConfig));
-  };
-
-  return instance;
-}
-
-// Create the default instance to be exported
-const axios = createInstance(lib_defaults);
-
-// Expose Axios class to allow class inheritance
-axios.Axios = core_Axios;
-
-// Expose Cancel & CancelToken
-axios.CanceledError = cancel_CanceledError;
-axios.CancelToken = cancel_CancelToken;
-axios.isCancel = isCancel;
-axios.VERSION = VERSION;
-axios.toFormData = helpers_toFormData;
-
-// Expose AxiosError class
-axios.AxiosError = core_AxiosError;
-
-// alias for CanceledError for backward compatibility
-axios.Cancel = axios.CanceledError;
-
-// Expose all/spread
-axios.all = function all(promises) {
-  return Promise.all(promises);
-};
-
-axios.spread = spread;
-
-// Expose isAxiosError
-axios.isAxiosError = isAxiosError;
-
-// Expose mergeConfig
-axios.mergeConfig = mergeConfig;
-
-axios.AxiosHeaders = core_AxiosHeaders;
-
-axios.formToJSON = thing => helpers_formDataToJSON(utils.isHTMLForm(thing) ? new FormData(thing) : thing);
-
-axios.getAdapter = adapters.getAdapter;
-
-axios.HttpStatusCode = helpers_HttpStatusCode;
-
-axios.default = axios;
-
-// this module should only have a default export
-/* harmony default export */ const lib_axios = (axios);
-
+// EXTERNAL MODULE: ./node_modules/js-chacha20/src/jschacha20.js
+var jschacha20 = __webpack_require__(4329);
+var jschacha20_default = /*#__PURE__*/__webpack_require__.n(jschacha20);
+// EXTERNAL MODULE: ./node_modules/buffer/index.js
+var buffer = __webpack_require__(8287);
 ;// ./src/index.js
 
 
-let apivar = "";
-let secretvar = "";
-let pubvar = "";
 
-async function delete_key(){
-    const apikey = document.getElementById('akdel').value;
-    const secret = document.getElementById('spdel').value;
 
-    const data = {
-        api_key: apikey,
-        secret_phrase: secret,
-    };
-    try{
-        const res = await lib_axios.post("https://quantumsure.onrender.com/api/quantumsure/delete", {
-        data: data,
-        });
-        document.getElementById('keydel').innerHTML = `
-            <h3 style="color: red;padding: 1%">Key has been deleted</h3>
-        `;
 
-    }
-    catch (err){
-        console.log(err);
-        document.getElementById('keydel').innerHTML = `
-            <h3 style="color: red;padding: 1%">Failed to delete this key. Make sure the secret phrase and api key are valid.</h3>
-        `;
-    }
+// === CONFIG ===
+const API_BASE_URL = 'http://localhost:5000/api'; // Update if needed
+//const API_BASE_URL = 'https://quantumsure.onrender.com/api';
+
+// === CRYPTO HELPERS ===
+function randomBytes(length) {
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+  return buffer.Buffer.from(array);
+}
+
+async function computeMac(data, key) {
+  const dataBytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
+  const keyBytes = typeof key === 'string' ? new TextEncoder().encode(key) : key;
+  const combined = buffer.Buffer.concat([buffer.Buffer.from(dataBytes), buffer.Buffer.from(keyBytes)]);
+  const hash = await crypto.subtle.digest('SHA-256', combined);
+  return buffer.Buffer.from(hash);
+}
+
+function postQuantumEncrypt(data, key) {
+  const nonce = randomBytes(12);
+  const dataBytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
+  const chacha = new (jschacha20_default())(key, nonce);
+  const encrypted = chacha.encrypt(dataBytes);
+  return {
+    encrypted: encode(encrypted),
+    nonce: encode(nonce),
+  };
+}
+
+async function postQuantumDecrypt(encryptedB64, nonceB64, key, authTagB64) {
+  const encrypted = buffer.Buffer.from(decode(encryptedB64));
+  const nonce = buffer.Buffer.from(decode(nonceB64));
+  const combinedData = new TextEncoder().encode(`${nonceB64}${encryptedB64}`);
+  const computedMac = await computeMac(combinedData, key);
+  if (!computedMac.equals(buffer.Buffer.from(decode(authTagB64)))) {
+    throw new Error('Invalid MAC');
+  }
+  const chacha = new (jschacha20_default())(key, nonce);
+  const decrypted = chacha.decrypt(encrypted);
+  return new TextDecoder().decode(decrypted);
+}
+
+async function quantumResistantEncrypt(inputData, pubKeyB64) {
+  const publicKey = buffer.Buffer.from(decode(pubKeyB64));
+  const sender = new MlKem1024();
+  const [ciphertext, sharedSecret] = await sender.encap(publicKey);
+  const { encrypted, nonce } = postQuantumEncrypt(inputData, sharedSecret);
+  const combinedData = new TextEncoder().encode(`${nonce}${encrypted}`);
+  const authTag = await computeMac(combinedData, sharedSecret);
+  return {
+    encrypted_data: `${encode(ciphertext)}:${nonce}:${encrypted}:${encode(authTag)}`,
+  };
+}
+
+async function quantumResistantDecrypt(encryptedData, privateKeyB64) {
+  const [ciphertextB64, nonceB64, encryptedB64, authTagB64] = encryptedData.split(':');
+  if (!ciphertextB64 || !nonceB64 || !encryptedB64 || !authTagB64) {
+    throw new Error('Invalid encrypted data format');
+  }
+  const privateKey = buffer.Buffer.from(decode(privateKeyB64));
+  const recipient = new MlKem1024();
+  const sharedSecret = await recipient.decap(buffer.Buffer.from(decode(ciphertextB64)), privateKey);
+  return await postQuantumDecrypt(encryptedB64, nonceB64, sharedSecret, authTagB64);
+}
+
+async function encryptPrivateKey(privateKey, masterPassword) {
+  const key = buffer.Buffer.from(masterPassword.padEnd(32, '0').slice(0, 32));
+  const nonce = randomBytes(12);
+  const chacha = new (jschacha20_default())(key, nonce);
+  const encrypted = chacha.encrypt(buffer.Buffer.from(privateKey));
+  const combinedData = new TextEncoder().encode(`${encode(nonce)}${encode(encrypted)}`);
+  const authTag = await computeMac(combinedData, key);
+  return `${encode(nonce)}.${encode(encrypted)}.${encode(authTag)}`;
+}
+
+async function decryptPrivateKey(encryptedPrivateKey, masterPassword) {
+  const [nonceB64, encryptedB64, authTagB64] = encryptedPrivateKey.split('.');
+  if (!nonceB64 || !encryptedB64 || !authTagB64) {
+    throw new Error('Invalid encrypted private key format');
+  }
+  const key = buffer.Buffer.from(masterPassword.padEnd(32, '0').slice(0, 32));
+  const combinedData = new TextEncoder().encode(`${nonceB64}${encryptedB64}`);
+  const computedMac = await computeMac(combinedData, key);
+  if (!computedMac.equals(buffer.Buffer.from(decode(authTagB64)))) {
+    throw new Error('Invalid MAC');
+  }
+  const nonce = buffer.Buffer.from(decode(nonceB64));
+  const encrypted = buffer.Buffer.from(decode(encryptedB64));
+  const chacha = new (jschacha20_default())(key, nonce);
+  const decrypted = chacha.decrypt(encrypted);
+  return new TextDecoder().decode(decrypted);
+}
+
+// === USER SESSION MANAGER ===
+const USER_SESSIONS = 'qs_user_sessions';
+let currentSession = null;
+
+function saveSession(apiKey, encryptedPrivateKey, alias = 'User') {
+  const sessions = JSON.parse(localStorage.getItem(USER_SESSIONS) || '[]');
+  const existing = sessions.find(s => s.apiKey === apiKey);
+  if (existing) {
+    existing.encryptedPrivateKey = encryptedPrivateKey;
+    existing.alias = alias;
+  } else {
+    sessions.push({ apiKey, encryptedPrivateKey, alias });
+  }
+  localStorage.setItem(USER_SESSIONS, JSON.stringify(sessions));
+  switchToSession(apiKey);
+}
+
+function switchToSession(apiKey) {
+  const sessions = JSON.parse(localStorage.getItem(USER_SESSIONS) || '[]');
+  const session = sessions.find(s => s.apiKey === apiKey);
+  if (!session) return;
+
+  currentSession = session;
+  localStorage.setItem('apiKey', session.apiKey);
+  localStorage.setItem('encryptedPrivateKey', session.encryptedPrivateKey);
+
+  document.getElementById('current-user').innerText = `${session.alias} (${session.apiKey.slice(0, 8)}...)`;
+  document.getElementById('user-switcher').style.display = 'block';
+}
+
+async function logoutUser() {
+  localStorage.removeItem('apiKey');
+  localStorage.removeItem('encryptedPrivateKey');
+  currentSession = null;
+  document.getElementById('user-switcher').style.display = 'none';
+  document.getElementById('output').innerText = 'Logged out. Create or switch user.';
+}
+window.logoutUser = logoutUser;
+
+function switchUser() {
+  const sessions = JSON.parse(localStorage.getItem(USER_SESSIONS) || '[]');
+  if (sessions.length === 0) {
+    alert('No users to switch.');
+    return;
+  }
+
+  const options = sessions.map((s, i) => `${i + 1}. ${s.alias} (${s.apiKey.slice(0, 8)}...)`).join('\n');
+  const choice = prompt(`Switch to:\n${options}\n\nEnter number:`, '1');
+  const index = parseInt(choice) - 1;
+  if (index >= 0 && index < sessions.length) {
+    switchToSession(sessions[index].apiKey);
+    document.getElementById('output').innerText = `Switched to ${sessions[index].alias}`;
+  }
+}
+window.switchUser = switchUser;
+
+// === API CALLS ===
+async function createAccount(secretPhrase, masterPassword, alias) {
+  const recipient = new MlKem1024();
+  const [publicKey, privateKey] = await recipient.generateKeyPair();
+  const publicKeyB64 = encode(publicKey);
+  const privateKeyB64 = encode(privateKey);
+  const encryptedPrivateKey = await encryptPrivateKey(privateKeyB64, masterPassword);
+
+  const response = await fetch(`${API_BASE_URL}/user/create`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      data: { public_key: publicKeyB64, secret_phrase: secretPhrase }
+    }),
+  });
+
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const result = await response.json();
+  saveSession(result.api_key, encryptedPrivateKey, alias);
+  return result;
+}
+
+
+async function getPublicKey(targetApiKey) {
+  const myApiKey = localStorage.getItem('apiKey');
+  const response = await fetch(`${API_BASE_URL}/user/public-key/${targetApiKey}`, {
+    method: 'GET',
+    headers: {
+      'api_key': myApiKey,  // ← Auth as ME
+      'Content-Type': 'application/json'
+    },
+  });
+  if (!response.ok) throw new Error(`Failed to get public key: ${await response.text()}`);
+  const { public_key } = await response.json();
+  return public_key;
+}
+
+// storePassword() — get MY public key
+async function getMyPublicKey() {
+  const apiKey = localStorage.getItem('apiKey');
+  const res = await fetch(`${API_BASE_URL}/user/public-key`, {
+    method: 'GET',
+    headers: { 'api_key': apiKey }
+  });
+  const { public_key } = await res.json();
+  return public_key;
+}
+
+async function storePassword(apiKey, site, username, password) {
+  const publicKey = await getMyPublicKey();
+  const { encrypted_data } = await quantumResistantEncrypt(password, publicKey);
+  const response = await fetch(`${API_BASE_URL}/password/store`, {
+    method: 'POST',
+    headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      data: { site, username, encrypted_text: encrypted_data }
+    }),
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return await response.json();
+}
+
+async function listPasswords(apiKey) {
+  const response = await fetch(`${API_BASE_URL}/password/list`, {
+    method: 'GET',
+    headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return await response.json();
+}
+
+async function getPassword(apiKey, passwordId, masterPassword, encryptedPrivateKey) {
+  const response = await fetch(`${API_BASE_URL}/password/get`, {
+    method: 'POST',
+    headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data: { password_id: passwordId } }),
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const { encrypted_text, site, username } = await response.json();
+  const privateKeyB64 = await decryptPrivateKey(encryptedPrivateKey, masterPassword);
+  const password = await quantumResistantDecrypt(encrypted_text, privateKeyB64);
+  return { site, username, password };
+}
+
+async function shareWithUsers(apiKey, passwordId, masterPassword, encryptedPrivateKey, recipientApiKeys) {
+  const privateKeyB64 = await decryptPrivateKey(encryptedPrivateKey, masterPassword);
+  const getRes = await fetch(`${API_BASE_URL}/password/get`, {
+    method: 'POST',
+    headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data: { password_id: passwordId } }),
+  });
+  const { encrypted_text } = await getRes.json();
+  const plaintext = await quantumResistantDecrypt(encrypted_text, privateKeyB64);
+
+  const encryptedTokens = [];
+  for (const recApiKey of recipientApiKeys) {
+    const pubKey = await getPublicKey(recApiKey);
+    const { encrypted_data } = await quantumResistantEncrypt(plaintext, pubKey);
+    encryptedTokens.push(encrypted_data);
+  }
+
+  const shareRes = await fetch(`${API_BASE_URL}/share`, {
+    method: 'POST',
+    headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      data: {
+        qpassword_id: passwordId,
+        user_api_keys: recipientApiKeys,
+        encrypted_access_tokens: encryptedTokens,
+        expires_in_hours: 24
+      }
+    }),
+  });
+  if (!shareRes.ok) throw new Error(`HTTP ${shareRes.status}`);
+  return await shareRes.json();
+}
+
+async function revokeSharedPassword(apiKey, shareId) {
+  const response = await fetch(`${API_BASE_URL}/share/revoke`, {
+    method: 'POST',
+    headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      data: { share_id: shareId }
+    }),
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return await response.json();
+}
+
+
+async function deleteSharedPassword(apiKey, shareId) {
+  const response = await fetch(`${API_BASE_URL}/share/delete`, {
+    method: 'POST',
+    headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      data: { share_id: shareId }
+    }),
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return await response.json();
+}
+
+async function useSharedPassword(apiKey, shareId, masterPassword, encryptedPrivateKey) {
+  const privateKeyB64 = await decryptPrivateKey(encryptedPrivateKey, masterPassword);
+  const res = await fetch(`${API_BASE_URL}/share/use`, {
+    method: 'POST',
+    headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      data: { share_id: shareId, private_key_b64: privateKeyB64 }
+    }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const response = await res.json();
+  const { encrypted_blob, share_type } = response;
+  if (!encrypted_blob){
+    throw new Error('No encrypted data found!');
+  }
+  const decrypted = await quantumResistantDecrypt(encrypted_blob, privateKeyB64);
+  if (share_type.includes('password')){
+    return {password: decrypted};
+  }
+  else if (share_type.includes('oauth')){
+    return {access_token: decrypted};
+  }
+  else {
+    throw new Error('Unknown share type: '.concat(share_type));
+  }
 
 }
-window.delete_key = delete_key;
 
-
-
-async function create_key(){
-    document.getElementById('keycre2').innerHTML = `
-            <h3 style="color: red;padding: 1%">Please wait while we generate your Keys..</h3>
-        `;
-    try{
-        const res = await lib_axios.post("https://quantumsure.onrender.com/api/quantumsure/create", {
-        data: null,
-        });
-        console.log("Creation complete.");
-        document.getElementById('keycre2').innerHTML = `
-            <h3 style="color: red;padding: 1%">Key creation successful. Please copy and securely write the details on the right.</h3>
-        `;
-        pubvar = res.data.public_key;
-        secretvar = res.data.secret_phrase;
-        apivar = res.data.api_key;
-        document.getElementById('keycre').style.visibility = 'visible';
-    }
-    catch (err){
-        console.log(err);
-        alert('something went wrong');
-    }
-
-
-
+async function createShareGroup1(apiKey, groupName){
+    const response = await fetch(`${API_BASE_URL}/sharegroup/create`, {
+        method: 'POST',
+        headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: { name: groupName } }),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
 }
-window.create_key = create_key;
 
-async function copy1(){
-    try {
-        const res = await navigator.clipboard.writeText(apivar);
-    }
-    catch (err){
-        console.log(err);
-    }
+async function addShareGroupMember(apiKey, groupId, memberApi){
+    const response = await fetch(`${API_BASE_URL}/sharegroup/add`, {
+        method: 'POST',
+        headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: { group_id: groupId, member_api_keys: [memberApi] } }),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
 }
-window.copy1 = copy1;
 
-
-async function copy2(){
-    try {
-        const res = await navigator.clipboard.writeText(pubvar);
-    }
-    catch (err){
-        console.log(err);
-    }
+async function removeShareGroupMember(apiKey, groupId, memberApi){
+    const response = await fetch(`${API_BASE_URL}/sharegroup/remove`, {
+        method: 'POST',
+        headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: { group_id: groupId, member_api_keys: [memberApi] } }),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
 }
-window.copy2 = copy2;
 
+async function revokeShareGroup1(apiKey, groupId){
+    const response = await fetch(`${API_BASE_URL}/sharegroup/revoke`, {
+        method: 'POST',
+        headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: { group_id: groupId } }),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+}
 
-async function copy3(){
-    try {
-        const res = await navigator.clipboard.writeText(secretvar);
+async function deleteShareGroup1(apiKey, groupId){
+    const response = await fetch(`${API_BASE_URL}/sharegroup/delete`, {
+        method: 'POST',
+        headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: { group_id: groupId } }),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+}
+
+function generatePassword(length = 16) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+  const bytes = randomBytes(length);
+  return Array.from(bytes).map(b => chars[b % chars.length]).join('');
+}
+
+// === UI ===
+window.createAccount = async () => {
+  const mp = document.getElementById('create-master-password').value;
+  const sp = document.getElementById('secret-phrase').value;
+  const alias = prompt('Name this user (e.g., Alice, Bob):', 'User') || 'User';
+
+  if (!mp || !sp) {
+    alert('Master password and secret phrase required.');
+    return;
+  }
+
+  try {
+    const r = await createAccount(sp, mp, alias);
+    document.getElementById('output').innerText =
+      `Account created!\nName: ${alias}\nAPI Key: ${r.api_key}`;
+  } catch (e) {
+    document.getElementById('output').innerText = `Error: ${e.message}`;
+  }
+};
+
+window.storePassword = async () => {
+  const apiKey = localStorage.getItem('apiKey');
+  if (!apiKey) return alert('No user logged in.');
+  const site = document.getElementById('site').value;
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  if (!site || !username || !password) return alert('Fill all fields.');
+
+  try {
+    const r = await storePassword(apiKey, site, username, password);
+    document.getElementById('output').innerText = `Stored! ID: ${r.password_id}`;
+  } catch (e) {
+    document.getElementById('output').innerText = `Error: ${e.message}`;
+  }
+};
+
+window.listPasswords = async () => {
+  const apiKey = localStorage.getItem('apiKey');
+  if (!apiKey) return alert('No user logged in.');
+  try {
+    const r = await listPasswords(apiKey);
+    const ul = document.getElementById('password-list');
+    ul.innerHTML = '';
+    r.passwords.forEach(p => {
+      const li = document.createElement('li');
+      li.innerText = `${p.site} - ${p.username} (ID: ${p.id})`;
+      ul.appendChild(li);
+    });
+    document.getElementById('output').innerText = `Loaded ${r.passwords.length} passwords.`;
+  } catch (e) {
+    document.getElementById('output').innerText = `Error: ${e.message}`;
+  }
+};
+
+window.getPassword = async () => {
+  const apiKey = localStorage.getItem('apiKey');
+  const id = document.getElementById('password-id').value;
+  const mp = document.getElementById('retrieve-master-password').value;
+  const epk = localStorage.getItem('encryptedPrivateKey');
+  if (!apiKey || !id || !mp || !epk) return alert('Missing data.');
+
+  try {
+    const r = await getPassword(apiKey, id, mp, epk);
+    document.getElementById('output').innerText = `Password: ${r.password}`;
+  } catch (e) {
+    document.getElementById('output').innerText = `Error: ${e.message}`;
+  }
+};
+
+window.sharePassword = async () => {
+  const apiKey = localStorage.getItem('apiKey');
+  const id = document.getElementById('share-password-id').value;
+  const mp = document.getElementById('share-master-password').value;
+  const st = document.getElementById('share-type').value;
+  const epk = localStorage.getItem('encryptedPrivateKey');
+  const recipients = document.getElementById('recipient-api-keys').value.split(',').map(s => s.trim()).filter(Boolean);
+
+  if (!apiKey || !id || !mp || !epk || !st || recipients.length === 0) {
+    return alert('Fill all fields');
+  }
+
+  try {
+    // 1. Get encrypted password
+    const getRes = await fetch(`${API_BASE_URL}/password/get`, {
+      method: 'POST',
+      headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: { password_id: id } })
+    });
+    const { encrypted_text } = await getRes.json();
+
+    // 2. Decrypt locally
+    const privateKeyB64 = await decryptPrivateKey(epk, mp);
+    const plaintext = await quantumResistantDecrypt(encrypted_text, privateKeyB64);
+
+    // 3. Re-encrypt for each recipient
+    const encryptedTokens = [];
+    for (const recKey of recipients) {
+      const pubKey = await getPublicKey(recKey);
+      const { encrypted_data } = await quantumResistantEncrypt(plaintext, pubKey);
+      encryptedTokens.push(encrypted_data);
     }
-    catch (err){
-        console.log(err);
+
+    // 4. Send to server
+    const shareRes = await fetch(`${API_BASE_URL}/share`, {
+      method: 'POST',
+      headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        data: {
+          qpassword_id: id,
+          user_api_keys: recipients,
+          encrypted_access_tokens: encryptedTokens,
+          expires_in_hours: 24,
+          share_type: st
+        }
+      })
+    });
+
+    const result = await shareRes.json();
+    document.getElementById('output').innerText = `Shared! Check console.`;
+    console.log('Shares:', result.shares);
+  } catch (e) {
+    document.getElementById('output').innerText = `Error: ${e.message}`;
+  }
+};
+
+
+window.useShared = async () => {
+  const shareId = document.getElementById('share-id').value;
+  const mp = document.getElementById('access-master-password').value;
+  const epk = localStorage.getItem('encryptedPrivateKey');
+  const apiKey = localStorage.getItem("apiKey");
+  if (!shareId || !mp || !epk) return alert('Fill all fields.');
+
+  try {
+    const r = await useSharedPassword(apiKey, shareId, mp, epk);
+    document.getElementById('output').innerText = `Shared Password: ${r.password}`;
+  } catch (e) {
+    document.getElementById('output').innerText = `Error: ${e.message}`;
+  }
+};
+
+
+window.revokeShared = async () => {
+  const shareId = document.getElementById('share-id2').value;
+  const apiKey = localStorage.getItem("apiKey");
+  if (!shareId) return alert('Fill all fields.');
+
+  try {
+    const r = await revokeSharedPassword(apiKey, shareId);
+    document.getElementById('output').innerText = `Successfully Revoked Shared Token.`;
+  } catch (e) {
+    document.getElementById('output').innerText = `Error: ${e.message}`;
+  }
+};
+
+window.deleteShared = async () => {
+  const shareId = document.getElementById('share-id3').value;
+  const apiKey = localStorage.getItem("apiKey");
+  if (!shareId) return alert('Fill all fields.');
+
+  try {
+    const r = await deleteSharedPassword(apiKey, shareId);
+    document.getElementById('output').innerText = `Successfully Deleted Shared Token.`;
+  } catch (e) {
+    document.getElementById('output').innerText = `Error: ${e.message}`;
+  }
+};
+
+window.createShareGroup = async () => {
+  const groupName = document.getElementById('group-name').value;
+  const apiKey = localStorage.getItem("apiKey");
+  if (!groupName) return alert('Fill all fields.');
+
+  try {
+    const r = await createShareGroup1(apiKey, groupName);
+    console.log(r);
+    document.getElementById('output').innerText = `Share Group Created. Group id: `.concat(r.group_id);
+  } catch (e) {
+    document.getElementById('output').innerText = `Error: ${e.message}`;
+  }
+};
+
+window.addGroupMember = async () => {
+  const groupId = document.getElementById('add-group-id').value;
+  const memberApi = document.getElementById('add-member-key').value;
+  const apiKey = localStorage.getItem("apiKey");
+  if (!groupId || !memberApi) return alert('Fill all fields.');
+
+  try {
+    const r = await addShareGroupMember(apiKey, groupId, memberApi);
+    document.getElementById('output').innerText = `Added Member.`;
+  } catch (e) {
+    document.getElementById('output').innerText = `Error: ${e.message}`;
+  }
+};
+
+window.removeGroupMember = async () => {
+  const groupId = document.getElementById('remove-group-id').value;
+  const memberApi = document.getElementById('remove-member-key').value;
+  const apiKey = localStorage.getItem("apiKey");
+  if (!groupId || !memberApi) return alert('Fill all fields.');
+
+  try {
+    const r = await removeShareGroupMember(apiKey, groupId, memberApi);
+    document.getElementById('output').innerText = `Removed Member.`;
+  } catch (e) {
+    document.getElementById('output').innerText = `Error: ${e.message}`;
+  }
+};
+
+window.revokeShareGroup = async () => {
+  const groupId = document.getElementById('revoke-group-id').value;
+  const apiKey = localStorage.getItem("apiKey");
+  if (!groupId) return alert('Fill all fields.');
+
+  try {
+    const r = await revokeShareGroup1(apiKey, groupId);
+    document.getElementById('output').innerText = `Share Group Revoked.`;
+  } catch (e) {
+    document.getElementById('output').innerText = `Error: ${e.message}`;
+  }
+};
+
+window.deleteShareGroup = async () => {
+  const groupId = document.getElementById('delete-group-id').value;
+  const apiKey = localStorage.getItem("apiKey");
+  if (!groupId) return alert('Fill all fields.');
+
+  try {
+    const r = await deleteShareGroup1(apiKey, groupId);
+    document.getElementById('output').innerText = `Share Group Deleted.`;
+  } catch (e) {
+    document.getElementById('output').innerText = `Error: ${e.message}`;
+  }
+};
+
+window.shareWithGroup = async () => {
+  const groupId = document.getElementById('share-group-id').value.trim();
+  const pwdId = document.getElementById('share-pwd-id').value.trim();
+  const shareType = document.getElementById('share-pwd-type').value.trim();
+  const mp = document.getElementById('share-mp').value;
+  const epk = localStorage.getItem('encryptedPrivateKey');
+  const apiKey = localStorage.getItem('apiKey');
+
+  if (!groupId || !pwdId || !shareType || !mp){
+    throw new Error('No field is optional!');
+  }
+
+
+  try {
+    // Reuse logic from Step 3 above
+    const privateKeyB64 = await decryptPrivateKey(epk, mp);
+    const getRes = await fetch(`${API_BASE_URL}/password/get`, {
+      method: 'POST',
+      headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: { password_id: pwdId } })
+    });
+    const { encrypted_text } = await getRes.json();
+    const plaintext = await quantumResistantDecrypt(encrypted_text, privateKeyB64);
+
+    const groupRes = await fetch(`${API_BASE_URL}/sharegroup/list`, { headers: { 'api_key': apiKey } });
+    const groups = await groupRes.json();
+    const group = groups.groups.find(g => g.group_id === groupId);
+
+    const memberKeys = group.member_api_keys;
+
+    const encryptedBlobs = [];
+    for (const key of memberKeys) {
+      const pub = await getPublicKey(key);
+      const { encrypted_data } = await quantumResistantEncrypt(plaintext, pub);
+      encryptedBlobs.push(encrypted_data);
     }
-}
-window.copy3 = copy3;
 
-async function to_kyber(){
-    window.open("https://pq-crystals.org/kyber/", '_blank');
-}
-window.to_kyber = to_kyber;
+    const shareRes = await fetch(`${API_BASE_URL}/share`, {
+      method: 'POST',
+      headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        data: {
+          qpassword_id: pwdId,
+          group_id: groupId,
+          user_api_keys: memberKeys,
+          encrypted_access_tokens: encryptedBlobs,
+          share_type: shareType,
+          expires_in_hours: 24
+        }
+      })
+    });
+    const result = await shareRes.json();
+    document.getElementById('output').innerText =
+      `Shared!\nShares: ${result.shares.map(s => s.share_id).join(', ')}`;
+     console.log('Shares:', result.shares);
 
+  } catch (e) {
+    document.getElementById('output').innerText = `Error: ${e.message}`;
+  }
+};
 
-async function to_fernet(){
-    window.open('https://cryptography.io/en/latest/fernet/', '_blank');
-}
-window.to_fernet = to_fernet;
+window.generatePassword = () => {
+  document.getElementById('password').value = generatePassword();
+};
+
+// === ON LOAD ===
+window.loadplan = () => {
+  const lastApiKey = localStorage.getItem('apiKey');
+  if (lastApiKey) {
+    switchToSession(lastApiKey);
+  }
+};
+
+})();
 
 /******/ })()
 ;

@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plans - QuantumSure</title>
-    <link rel="shortcut icon" href="img/logo.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuantumSure</title>
+  <link rel="shortcut icon" href="img/logo.png">
     <link rel="stylesheet" href="main.css">
+
 </head>
-<body>
-    <header>
+<body onload="loadplan();">
+<header>
         <nav>
             <div class="logo">QuantumSure</div>
             <div class="menu-toggle" id="mobile-menu">
@@ -25,85 +26,124 @@
             </ul>
         </nav>
     </header>
+  <!-- ADD THIS BELOW <h1> -->
+  <div id="user-switcher" style="margin: 15px 0; padding: 10px; border: 1px solid #eee; border-radius: 8px; display: none;">
+    <strong>Current User:</strong> <span id="current-user">None</span>
+    <button onclick="switchUser()" style="margin-left: 10px;">Switch User</button>
+    <button onclick="logoutUser()" style="margin-left: 5px; background: #dc3545;">Log Out</button>
+  </div>
+    <div style="margin-bottom: 130px;"><br/></div>
+  <section class="content2">
+    <h2>Create Account</h2>
+    <input type="password" id="create-master-password" placeholder="Master Password">
+    <input type="text" id="secret-phrase" placeholder="Secret Recovery Phrase">
+    <button onclick="createAccount()">Create Account</button>
+  </section>
 
-    <br/>
-    <section class="features2">
-        <h2>Our Plans</h2>
-        <div class="feature2-grid">
-            <div class="feature2-card">
-                <h3>$5.99 / month</h3>
-                <p>1000 encrypt requests a month</p>
-            </div>
-            <div class="feature2-card">
-                <h3>$12.99 / month</h3>
-                <p>15000 encrypt requests a month</p>
-            </div>
-            <div class="feature2-card">
-                <h3>$49.99 / month</h3>
-                <p>100000 encrypt requests a month</p>
-            </div>
-        </div>
-    </section>
-    <section class="features2">
-        <h2>Try Out What We Provide With a 30 Day Free Trial</h2>
-        <div class="feature2-grid">
-            <div class="feature2-card">
-                <h3>100 Encryption Requests</h3>
-                <p>Try it out for free.</p>
-            </div>
-            <div class="feature2-card">
-                <h3>30 Day Validity</h3>
-                <p>Use it on the go, anytime, anywhere over the next month.</p>
-            </div>
-            <div class="feature2-card">
-                <h3>Our Guarantee</h3>
-                <p>Not even you will be able to deduce the private key for your account. If you can, we are offering 1 year worth of subscription for free!</p>
-            </div>
-        </div>
-    </section>
-    <section class="features2">
-        <div class="feature2-grid">
-            <div class="feature2-card" id="keycre2">
-                <h3>Start Free Trial</h3>
-                <p>Click <a onclick="create_key()" style="color: #00ff88; cursor: pointer;">this</a> to start free trial.</p>
-            </div>
-            <div class="feature2-card" id="keycre" style="visibility:hidden">
-                <h3>Your Generated Credentials</h3>
-                <p>Your API Key &nbsp; &nbsp;&nbsp; &nbsp;&nbsp; &nbsp; <a style="background-color: #00ff88;width: 7%;color:black;padding: .5%;border-radius: 3%;cursor: pointer;" onclick="copy1();">Copy</a></p>
-                <p>Your Public Key &nbsp; &nbsp;&nbsp; &nbsp;<a style="background-color: #00ff88;width: 7%;color:black;padding: .5%;border-radius: 3%;cursor: pointer;" onclick="copy2();">Copy</a></p>
-                <p>Your Secret Phrase <a style="background-color: #00ff88;width: 7%;color:black;padding: .5%;border-radius: 3%;cursor: pointer;" onclick="copy3();">Copy</a></p>
-            </div>
+  <section class='content2'>
+    <h2>Store Password</h2>
+    <input type="text" id="site" placeholder="Site">
+    <input type="text" id="username" placeholder="Username">
+    <input type="text" id="password" placeholder="Password">
+    <button onclick="generatePassword()">Generate</button>
+    <button onclick="storePassword()">Store</button>
+  </section>
 
-        </div>
-    </section>
+  <section class="content2">
+    <h2>Vault</h2>
+    <button onclick="listPasswords()">List Passwords</button>
+    <ul id="password-list"></ul>
+  </section>
+
+  <section class="content2">
+    <h2>Retrieve</h2>
+    <input type="text" id="password-id" placeholder="Password ID">
+    <input type="password" id="retrieve-master-password" placeholder="Master Password">
+    <button onclick="getPassword()">Get</button>
+  </section>
+
+  <section class="content2">
+    <h2>Share with Team</h2>
+    <input type="text" id="share-password-id" placeholder="Password ID">
+    <input type="text" id="recipient-api-keys" placeholder="Recipient API Keys (comma-separated)">
+    <input type="text" id="share-type" placeholder="password or ouath_token">
+    <input type="password" id="share-master-password" placeholder="Master Password">
+    <button onclick="sharePassword()">Share</button>
+  </section>
 
 
+  <section class="content2">
+    <h2>Revoke Shared Password</h2>
+    <input type="text" id="share-id2" placeholder="Share ID">
+    <button onclick="revokeShared()">Revoke</button>
+  </section>
 
-    <section class="features">
-        <h2>Not satisfied? Here, you can delete your API Key and your account.</h2>
-        <div class="feature-grid">
-            <div class="feature-card">
-                <h3>WARNING</h3>
-                <p>Make sure to only click this option after decrypting and storing any data on your database that you have used QuantumSure on.</p>
-            </div>
-            <div class="feature-card" id="keydel">
-                <h3 style="color: red; cursor: pointer;" onclick="delete_key();">Delete My API Key</h3>
-                <input id="spdel" style="width: 80%;height: 25%;margin-bottom: 1%" placeholder=" your secret phrase"></input><br/>
-                <input id="akdel" style="width: 80%; height: 25%" placeholder=" your API Key"></input>
-            </div>
+  <section class="content2">
+    <h2>Delete Shared Password</h2>
+    <input type="text" id="share-id3" placeholder="Share ID">
+    <button onclick="deleteShared()">Delete</button>
+  </section>
 
-        </div>
-    </section>
+  <section class="content2">
+    <h2>Use Shared Password</h2>
+    <input type="text" id="share-id" placeholder="Share ID">
+    <input type="password" id="access-master-password" placeholder="Master Password">
+    <button onclick="useShared()">Use</button>
+  </section>
 
-    <footer>
-        <p>Resurgence Labs &copy; 2025</p>
+  <!-- ==== CREATE GROUP ==== -->
+<section class="content2">
+  <h2>Create Share Group</h2>
+  <input id="group-name" placeholder="Group name (e.g. Dev Team)" />
+  <button onclick="createShareGroup()">Create</button>
+</section>
+
+<!-- ==== ADD MEMBER ==== -->
+<section class="content2">
+  <h2>Add Member to Group</h2>
+  <input id="add-group-id" placeholder="Group ID" />
+  <input id="add-member-key" placeholder="Recipient API key" />
+  <button onclick="addGroupMember()">Add</button>
+  </section>
+
+<!-- ==== REMOVE MEMBER ==== -->
+<section class="content2">
+  <h2>Remove Member from Group</h2>
+  <input id="remove-group-id" placeholder="Group ID" />
+  <input id="remove-member-key" placeholder="Recipient API key" />
+  <button onclick="removeGroupMember()">Remove</button>
+</section>
+
+<!-- ==== REVOKE GROUP ==== -->
+<section class="content2">
+  <h2>Revoke Share Group</h2>
+  <input id="revoke-group-id" placeholder="Group ID" />
+  <button onclick="revokeShareGroup()">Delete</button>
+
+</section>
+
+<!-- ==== DELETE GROUP ==== -->
+<section class="content2">
+  <h2>Delete Share Group</h2>
+  <input id="delete-group-id" placeholder="Group ID" />
+  <button onclick="deleteShareGroup()">Delete</button>
+</section>
+
+
+<!-- ==== SHARE WITH GROUP ==== -->
+<section class="content2">
+  <h2>Share with Group</h2>
+  <input id="share-group-id" placeholder="Group ID" />
+  <input id="share-pwd-id" placeholder="Password ID" />
+  <input id="share-pwd-type" placeholder="password or oauth_token" />
+  <input id="share-mp" placeholder="Master Password" type="password" />
+  <button onclick="shareWithGroup()">Share with Group</button>
+</section>
+
+  <div id="output" class="op"></div>
+<footer>
+        <p>Quantumsure Inc &copy; 2025</p>
     </footer>
 
-    <script>
-        document.getElementById("mobile-menu").addEventListener("click", function () {
-            document.querySelector(".nav-center").classList.toggle("nav-active");
-        });
-    </script>
-    <script src="main.js"></script>
 </body>
 </html>

@@ -30,100 +30,39 @@
         <h1>QuantumSure Documentation</h1>
         <p>Get started with our API and integration guides. Explore our comprehensive resources to implement quantum-resistant cryptography in your systems.</p>
         <ul>
-            <li><a onclick="location.href='#api'">API Reference</a></li>
-            <li><a onclick="location.href='#integration'">Integration Guide</a></li>
+
+            <li><a onclick="location.href='#integration'">Usage Guide</a></li>
+            <li><a onclick="location.href='#sharing'">Sharing Guide</a></li>
             <li><a onclick="location.href='#bestpractices'">Best Security Practices</a></li>
             <li><a onclick="location.href='#tech'">QuantumSure Encryption at a Glance</a></li>
         </ul>
-        <div style="font-size: 1.8em; color: #00ff88" id="api">API Reference</div>
-        <div style="font-size: 1.4em; color: #00ff88">Create Key</div>
-        <p class="example">
-        Creates a new API Key and Public Key for your use. <br/> URI: https://quantumsure.onrender.com/api/quantumsure/create <br/> Expected Parameters: none <br/> Output: secret_phrase (string), public_key (string) <br/> Example: <br/><div class="innerexample">try{ <br/>
-    const res = await axios.post(URI, {<br/>
-      data: null,<br/>
-    });<br/>
 
-  console.log(res); <br/>
-  }<br/>
-  catch (err){<br/>
-    console.log(err);<br/>
-  }</div><br/>
         </p>
-        <div style="font-size: 1.4em; color: #00ff88">Delete Key</div>
-        <p class="example">
-        Deletes the API Key and corresponding Public Key. <br/> URI: https://quantumsure.onrender.com/api/quantumsure/delete <br/> Expected Parameters: api_key (string), secret_phrase (string)<br/> Example: <div class="innerexample">const data = { <br/>
-    api_key: "yourkey", <br/>
-    secret_phrase: "yourphrase", <br/>
-  }; <br/>
-  try{ <br/>
-    const res = await axios.post(URI, { <br/>
-      data: data, <br/>
-    }); <br/>
-
-  console.log(res); <br/>
-  } <br/>
-  catch (err){ <br/>
-    console.log(err); <br/>
-  } <br/></div>
-        </p>
-        <div style="font-size: 1.4em; color: #00ff88">Encrypt Data</div>
-        <p class="example">
-        Encrypts the target string with Quantum Resistant Cryptographic Algorithms. <br/> URI: https://quantumsure.onrender.com/api/quantumsure/encrypt <br/> Expected Headers: api_key (string), public_key (string) <br/> Expected Parameters: normal_text (string) <br/> Output: encrypted_text (string)<br/> Example: <br/><div class="innerexample"> const data = { <br/>
-    normal_text: "let us test some sample text to encrypt", <br/>
-  }; <br/>
-  const headers = { <br/>
-        'api_key': "yourapikey", <br/>
-        'public_key': "yourpublickey" <br/>
-        }; <br/>
-
-        try{ <br/>
-    const res = await axios.post(URI, { <br/>
-      data: data, <br/>
-    }, { <br/>
-      headers: headers <br/>
-    }); <br/>
-
-  console.log(res); <br/>
-  } <br/>
-  catch (err){ <br/>
-    console.log(err); <br/>
-  }</div> <br/>
-        </p>
-        <div style="font-size: 1.4em; color: #00ff88">Decrypt Data</div>
-        <p class="example">
-        Decrypts the target encrypted text string back to the text you provided in the Encrypt request. <br/> URI: https://quantumsure.onrender.com/api/quantumsure/decrypt <br/> Expected Headers: api_key (string) <br/> Expected Parameters: encrypted_text (string)<br/>Output: normal_text (string)<br/> Example: <br/><div class="innerexample"> const data = { <br/>
-        encrypted_text: "yourencryptedtext"<br/>
-        };<br/>
-        const headers = { <br/>
-        'api_key': "yourapikey", <br/>
-  } <br/>
-  try{ <br/>
-    const res = await axios.post(URI, { <br/>
-      data: data <br/>
-      }, <br/>
-      { <br/>
-      headers: headers <br/>
-      }); <br/>
-
-  console.log(res); <br/>
-  } <br/>
-  catch (err){ <br/>
-    console.log(err); <br/>
-  }</div> <br/>
-        </p>
-        <div style="font-size: 1.8em; color: #00ff88" id="integration">Integration Guide</div>
+        <div style="font-size: 1.8em; color: #00ff88" id="integration">Usage Guide</div>
         <div style="font-size: 1.4em; color: #00ff88">Creating a Key</div>
-        <p>Currently we are providing a free sample in <a href="plans.html" style="cursor: pointer;">plans</a>. Please click on 'generate my keys'. Safely store the secret phrase, api key and the public key, since we do NOT keep them on our end (to make it impossible for even us to read your data). If you lose these, your data can NEVER be recovered.</p>
-        <div style="font-size: 1.4em; color: #00ff88">Deleting a Key</div>
-        <p>Go to <a href="plans.html" style="cursor: pointer;">plans</a> and click on 'delete my keys' after inputting your secret phrase and api key. Note that this is irreversible.</p>
-        <div style="font-size: 1.4em; color: #00ff88">Encrypting and Decrypting Data</div>
-        <p>In your javascript project, in the .env file of your root directory, keep the public key (PUBLIC_KEY), API Key (API_KEY), and secret phrase (SECRET) as environmental variables, and then call the functions as shown in the API Reference section. Access the returned values with res.data.encrypted_text or res.data.normal_text.</p>
+        <p>Currently we are providing a free sample in <a href="plans.html" style="cursor: pointer;">plans</a>. Please use the first section of the page to Create an Account. Make sure to safely store your Master Password, because we do NOT store it anywhere, and if your lose it, we cannot help you. The successful creation of an account generates an API Key. Please store it somewhere.</p>
+
+        <div style="font-size: 1.4em; color: #00ff88">Encrypting and Decrypting Passwords</div>
+        <p>In the Store Password section, enter the details asked. On successful execution, it generates a Password ID. You can use this ID in the Retrieve section to decrypt the password using your Master Password.</p>
+
+        <div style="font-size: 1.4em; color: #00ff88">Sharing a Password</div>
+        <p>In the Share With Team section, enter the Password ID (Not the Password) of the password you want to share, and the API Keys of the teammates or employees you wish to share it with. It generates a share token for each of them. Please copy those and send to them in order to securely share your password.</p>
+
+        <div style="font-size: 1.4em; color: #00ff88">Creating a Share Group</div>
+        <p>Go to the Create Share Group section. Give it any name and click the Create button. Successful group creation would create a Group Id. Please save it. To add members to this group, go to the Add Member to Group section. Input the Group Id and the API Key of the intended member. They will get added to the Share Group. Follow the same approach to remove members from your Share Group.</p>
+        <br/>
+        <div style="font-size: 1.8em; color: #00ff88" id="sharing">Sharing Guide</div>
+        <p>The beauty of QuantumSure is in the ability it grants to the client to share passwords without the need to share them across the internet in plain text form. It can also enable your generated access tokens (for example Google or AWS auth tokens) to be directly used by your team without the need of giving an actual token to them.</p>
+        <p>Generate an auth token: This is anything from Google Docs to Amazon Cloud Services.</p>
+        <p>Store the token: Use the <a href="./plans.html" style='cursor:pointer;'>Plans</a> page to Store Password. Use the Share Password option to create a Share Token.</p>
+        <p>Frontend Access: In the frontend that your employees/team use, include <a style="cursor:pointer;">this function</a> to have them fetch the encrypted token, and <a style="cursor:pointer;">this function</a> to decrypt it. Then directly use it in your call to the Amazon or Google service call. This way, they can work with your tokens without needing to know or access them directly.</p>
+        <br/>
 
         <div style="font-size: 1.8em; color: #00ff88" id="bestpractices">Best Security Practices</div>
-        <p>Please DO NOT share your secret_phrase, api_key, or public_key with anyone, because that would allow them to delete your account, and they will also be able to generate a lot of training data by using your keys to generate encrypted text for normal text data.</p>
+        <p>Please DO NOT share your Master Password or public_key with anyone, because that would allow them to delete your account, and they will also be able to generate a lot of training data by using your keys to generate encrypted text for normal text data.</p>
 
         <div style="font-size: 1.8em; color: #00ff88" id="tech">QuantumSure Encryption at a Glance</div>
-        <p>QuantumSure using multiple encryption algorithms, and decoy mechanics to ensure the safety of your data, and its resistance to hacking and unauthorized access, even when pitted against Quantum Computers. The technology involves Kyber1024, Fernet-like, and decoy based encryption.</p>
+        <p>QuantumSure uses multiple encryption algorithms, and decoy mechanics to ensure the safety of your data, and its resistance to hacking and unauthorized access, even when pitted against Quantum Computers. The technology involves Kyber1024, Fernet-like, and decoy based encryption.</p>
         <p><a>Kyber 1024:</a> Kyber is an IND-CCA2-secure key encapsulation mechanism (KEM)<a style="cursor: pointer;" onclick="to_kyber();">[1]</a>, whose security is based on the hardness of solving the learning-with-errors (LWE) problem over module lattices. Kyber is one of the finalists in the NIST post-quantum cryptography project. The submission lists three different parameter sets aiming at different security levels. Specifically, Kyber-512 aims at security roughly equivalent to AES-128, Kyber-768 aims at security roughly equivalent to AES-192, and Kyber-1024 aims at security roughly equivalent to AES-256.<br/>
         The design of the Kyber encryption is rooted in the seminal LWE-based encryption scheme of Regev. Since Regev's original work, the practical efficiency of LWE encryption schemes has been improved by observing that the secret in LWE can come from the same distribution as the noise and also noticing that "LWE-like" schemes can be built by using a square (rather than a rectangular) matrix as the public key. Another improvement was applying an idea originally used in the NTRU cryptosystem to define the Ring-LWE and Module-LWE problems that used polynomial rings rather than integers. The CCA-secure KEM Kyber is built on top of a CPA-secure cryptosystem that is based on the hardness of Module-LWE.
         </p>
@@ -132,13 +71,13 @@
         -AES in CBC mode with a 128-bit key for encryption; using PKCS7 padding.<br/>
         -HMAC using SHA256 for authentication.<br/>
         -Initialization vectors are generated using random number generators.<br/>
-        Since the original implementation of Fernet is in Python, QuantumSure calls its method "Fernet-like Encryption" because it is built in a different language (javascript), and uses additional safety checks to make it even more robust.
+        Since the original implementation of Fernet is in Python, QuantumSure calls its method "Fernet-like Encryption" because it is built in a different language (javascript), and uses additional safety checks to make it even more robust. This method is built using the ChaCha20 library in JavaScript.
         </p>
-        <p><a>Decoy-based Encryption:</a> This is a unique implementation, specially created in-house by the QuantumSure cryptographers. It involves generating a key, and using it as an operand in a formula, instead of directly giving it to the client for end usage. This ensures that the public keys cannot be bulk generated and tried with different testing datasets to "guess" the private key. The exact algorithm and implementation is black boxed to ensure that malicious parties can't break past this additional layer of security.</p>
+        <p><a>Decoy-based Encryption:</a> This is a unique implementation, specially created in-house by the QuantumSure cryptographers. It involves generating a key that serves no purpose, and adding it to the data QuantumSure stores, that leads to potential malicious parties getting 'keys' that don't truly do anything, thereby wasting their time and resources to decipher bits of data that are totally useless.</p>
     </section>
 
     <footer>
-        <p>Resurgence Labs &copy; 2025</p>
+        <p>Quantumsure Inc &copy; 2025</p>
     </footer>
     <script>
         document.getElementById("mobile-menu").addEventListener("click", function () {

@@ -253,6 +253,67 @@ nav ul li a:hover, nav ul li a.active {
     text-decoration: underline;
 }
 
+
+
+/* Content 2 Section */
+.content2 {
+    padding: 8rem 5% 5rem;
+    max-width: 800px;
+    margin: 0 auto;
+    margin-top: 10px;
+    padding: 15px;
+    border: 1px solid #00ff88;
+
+}
+
+.content2 h2 {
+    font-size: 2.0rem;
+    margin-bottom: 1.5rem;
+    color: #00ff88;
+}
+
+.content2 input {
+    margin: 5px;
+    padding: 8px;
+    width: 100%;
+}
+
+.content2 button {
+    background: #00ff88;
+    color: #222222;
+    margin: 5px;
+    padding: 8px;
+    width: 100%;
+    border: none;
+    cursor: pointer;
+}
+
+.content2 button:hover {
+    background: #007bff;
+    color: #dddddd;
+    margin: 5px;
+    padding: 8px;
+    width: 100%;
+    border: none;
+    cursor: pointer;
+}
+
+.content2 a {
+    color: #00ff88;
+    text-decoration: none;
+}
+
+.content2 a:hover {
+    text-decoration: underline;
+}
+
+.op {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #00ff88;
+
+}
+
 .faq-item {
     margin-bottom: 2rem;
 }

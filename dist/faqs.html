@@ -41,21 +41,76 @@
             <p>It is a set of cryptographic algorithms designed to remain secure against attacks from quantum computers.</p>
         </div>
         <div class="faq-item">
+            <h3>What makes QuantumSure better than the password vault I already use?</h3>
+            <p>QuantumSure is one of the only password vault services that is Quantum secure. It is also one of the most compliant, providing you with an entire password sharing audit trail, in case required to monitor password sharing and access.</p>
+            <p>Let's take a look at how it compares to others:<br/>
+            <table style="width:100%">
+                <thead>
+                    <tr>
+                        <th style="border: 1px solid #00ff88;padding: 5px">Feature</th>
+                        <th style="border: 1px solid #00ff88;padding: 5px">QuantumSure</th>
+                        <th style="border: 1px solid #00ff88;padding: 5px">Your Password Vault</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Post Quantum Encryption</td>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Yes</td>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">No</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Zero-Trust Sharing</td>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Yes</td>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">No</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Group Sharing</td>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Yes (one click)</td>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">No</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Group Revocation</td>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Yes</td>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">No</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Stores Your Master Key on Server</td>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">No</td>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Yes</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Audit Trail</td>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Yes</td>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">No</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Transparent Algorithm</td>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Yes (Kyber)</td>
+                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">No</td>
+                    </tr>
+
+
+                </tbody>
+            </table>
+            </p>
+
+        </div>
+        <div class="faq-item">
             <h3>How does QuantumSure protect my data?</h3>
-            <p>QuantumSure uses NIST-approved post-quantum algorithms and real-time monitoring to ensure robust security. Taking the threat of Quantum Computing very seriously, QuantumSure uses multilayered algorithms, integrating Fernet-like cryptography, Kyber 1024, and decoy keys to ensure the client data is ready to stand to the test of hacking and malicious actors in a post-quantum world.</p>
+            <p>QuantumSure uses NIST-approved post-quantum algorithms and real-time monitoring to ensure robust security. Taking the threat of Quantum Computing very seriously, QuantumSure uses multilayered algorithms, integrating Fernet-like cryptography, Kyber 1024, and decoy keys to ensure that the client data is ready to stand to the test of hacking and malicious actors in a post-quantum world.</p>
         </div>
         <div class="faq-item">
             <h3>Can I integrate QuantumSafe with my existing systems?</h3>
             <p>Yes, our SaaS platform is designed for seamless integration. Check our <a href="docs.html">documentation</a> for details.</p>
         <div class="faq-item">
             <h3>Do I need to share my sensitive data for this?</h3>
-            <p>NO. QuantumSure works by doubly encrypting your data, meaning it only expects the encrypted data that your existing systems have already encrypted to the best of their capability. It then adds a quantum-resistant encryption layer on top, and outputs the doubly encrypted data to you, so you can replace your singly encrypted data in your database with it. The decryption works the same way.</p>
+            <p>NO. QuantumSure works by doubly encrypting your passwords, first on your end, and then on our end. The Master Password you use while creating your account isn't stored by QuantumSure, meaning not even we can access your confidential data. </p>
         <div class="faq-item">
-            <h3>Can I use unencrypted data directly?</h3>
-            <p>If you have unencrypted data, currently not subject to any cryptographic algorithm, QuantumSure can operate on that as well. We just brought up the above point about re-encryption to highlight that we don't need your previously encoded data to be decoded to work.</p>
+            <h3>Can I use already encrypted data instead?</h3>
+            <p>Yes! If you want to add an extra layer of security, you can store passwords after encrypting them with your own algorithms, and then storing them. QuantumSure is data-neutral, so it will store anything you want as a 'password'. Please remember that you need to decrypt in a similar manner on your end if you opt to do this.</p>
         <div class="faq-item">
-            <h3>What format of requests does QuantumSure expect?</h3>
-            <p>QuantumSure requires the text in string format, along with the api key, and the public key in the request header. The exact tutorial can be viewed in <a href="docs.html">documentation</a>.</p>
+            <h3>I forgot my Master Password. What can I do?</h3>
+            <p>QuantumSure does NOT store your Master Password and CANNOT access the decrypted passwords. Consequently, it mean that we cannot recover your Master Password for you if you lose it. Hence, please be sure to NEVER misplace or forget it.</p>
         </div>
         <div class="faq-item">
             <h3>What is the pricing like?</h3>
@@ -72,7 +127,7 @@
     </section>
 
     <footer>
-        <p>Resurgence Labs &copy; 2025</p>
+        <p>Quantumsure Inc &copy; 2025</p>
     </footer>
 
     <script>
