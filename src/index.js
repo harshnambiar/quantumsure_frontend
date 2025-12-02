@@ -124,7 +124,7 @@ function switchToSession(apiKey) {
   localStorage.setItem('encryptedPrivateKey', session.encryptedPrivateKey);
 
   document.getElementById('current-user').innerText = `${session.alias} (${session.apiKey.slice(0, 8)}...)`;
-  document.getElementById('user-switcher').style.display = 'block';
+  //document.getElementById('user-switcher').style.display = 'block';
 }
 
 async function logoutUser() {
@@ -681,12 +681,12 @@ window.generatePassword = () => {
 };
 
 // === ON LOAD ===
-window.loadplan = () => {
+window.loadplan = async () => {
   const lastApiKey = localStorage.getItem('apiKey');
   const sessions = JSON.parse(localStorage.getItem(USER_SESSIONS) || '[]');
   if (sessions.length !== 0) {
     const options = sessions.map((s, i) => `${i + 1}. ${s.alias} (${s.apiKey.slice(0, 8)}...)`).join('\n');
-    document.getElementById('user-switcher').style.display = 'block';
+    //document.getElementById('user-switcher').style.display = 'block';
 
   }
 
@@ -696,4 +696,29 @@ window.loadplan = () => {
     switchToSession(lastApiKey);
   }
 
+  await showFlow(1);
+
 };
+
+
+async function toggleFlowMenu() {
+  const dropdown = document.getElementById('flow-dropdown');
+  dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+}
+window.toggleFlowMenu = toggleFlowMenu;
+
+async function showFlow(k){
+  var i = 1;
+  document.querySelectorAll('.content-wrapper').forEach(sec => {
+    if (k != i){
+      sec.style.display = 'none';
+    }
+    else {
+      sec.style.display = 'block';
+    }
+    i++;
+  });
+  const dropdown = document.getElementById('flow-dropdown');
+  dropdown.style.display = 'none';
+}
+window.showFlow = showFlow;
