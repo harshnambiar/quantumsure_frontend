@@ -362,6 +362,45 @@ nav ul li a:hover, nav ul li a.active {
     text-decoration: underline;
 }
 
+/* Content 3 Section */
+.content3 {
+    padding: 8rem 5% 5rem;
+    max-width: 800px;
+    margin: 0 auto;
+    margin-top: 10px;
+    padding: 15px;
+    display: none;
+    background-color: #00ff88;
+    color: #222222;
+    border: 1px solid #dddddd;
+
+}
+
+.content3 h2 {
+    font-size: 2.0rem;
+    margin-bottom: 1.5rem;
+    color: #00ff88;
+}
+
+.content3 h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1.0rem;
+    color: #222222;
+}
+
+
+
+
+
+.content3 a {
+    color: #00ff88;
+    text-decoration: none;
+}
+
+.content3 a:hover {
+    text-decoration: underline;
+}
+
 .op {
     margin-top: 20px;
     padding: 15px;
