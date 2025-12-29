@@ -5311,7 +5311,7 @@ var buffer = __webpack_require__(8287);
 
 
 // === CONFIG ===
-const API_BASE_URL = 'http://localhost:5000/api'; // Update if needed
+const API_BASE_URL = 'https://quantumsure.onrender.com/api'; // Update if needed
 //const API_BASE_URL = 'https://quantumsure.onrender.com/api';
 
 // === CRYPTO HELPERS ===
@@ -5431,14 +5431,14 @@ function switchToSession(apiKey) {
   localStorage.setItem('encryptedPrivateKey', session.encryptedPrivateKey);
 
   document.getElementById('current-user').innerText = `${session.alias} (${session.apiKey.slice(0, 8)}...)`;
-  document.getElementById('user-switcher').style.display = 'block';
+  //document.getElementById('user-switcher').style.display = 'block';
 }
 
 async function logoutUser() {
   localStorage.removeItem('apiKey');
   localStorage.removeItem('encryptedPrivateKey');
   currentSession = null;
-  document.getElementById('user-switcher').style.display = 'none';
+  document.getElementById('current-user').innerText = 'None';
   document.getElementById('output').innerText = 'Logged out. Create or switch user.';
 }
 window.logoutUser = logoutUser;
@@ -5988,12 +5988,91 @@ window.generatePassword = () => {
 };
 
 // === ON LOAD ===
-window.loadplan = () => {
+window.loadplan = async () => {
   const lastApiKey = localStorage.getItem('apiKey');
+  const sessions = JSON.parse(localStorage.getItem(USER_SESSIONS) || '[]');
+  if (sessions.length !== 0) {
+    const options = sessions.map((s, i) => `${i + 1}. ${s.alias} (${s.apiKey.slice(0, 8)}...)`).join('\n');
+    //document.getElementById('user-switcher').style.display = 'block';
+
+  }
+
+
+
   if (lastApiKey) {
     switchToSession(lastApiKey);
   }
+
+  await showFlow(1);
+
 };
+
+
+async function toggleFlowMenu() {
+  const dropdown = document.getElementById('flow-dropdown');
+  dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+}
+window.toggleFlowMenu = toggleFlowMenu;
+
+async function showFlow(k){
+  var i = 1;
+  document.querySelectorAll('.content-wrapper').forEach(sec => {
+    if (k != i){
+      sec.style.display = 'none';
+    }
+    else {
+      sec.style.display = 'block';
+    }
+    i++;
+  });
+  const dropdown = document.getElementById('flow-dropdown');
+  dropdown.style.display = 'none';
+}
+window.showFlow = showFlow;
+
+
+async function expandGuide(k){
+  switch (k){
+    case 1: {
+      document.getElementById('dd1').style.display = document.getElementById('dd1').style.display !== 'block' ? 'block': 'none';
+      break;
+    }
+    case 2: {
+      document.getElementById('dd2').style.display = document.getElementById('dd2').style.display !== 'block' ? 'block': 'none';
+      break;
+    }
+    case 3: {
+      document.getElementById('dd3').style.display = document.getElementById('dd3').style.display !== 'block' ? 'block': 'none';
+      break;
+    }
+    case 4: {
+      document.getElementById('ee1').style.display = document.getElementById('ee1').style.display !== 'block' ? 'block': 'none';
+      break;
+    }
+    case 5: {
+      document.getElementById('ee2').style.display = document.getElementById('ee2').style.display !== 'block' ? 'block': 'none';
+      break;
+    }
+    case 6: {
+      document.getElementById('ee3').style.display = document.getElementById('ee3').style.display !== 'block' ? 'block': 'none';
+      break;
+    }
+    case 7: {
+      document.getElementById('ee4').style.display = document.getElementById('ee4').style.display !== 'block' ? 'block': 'none';
+      break;
+    }
+    case 8: {
+      document.getElementById('ee5').style.display = document.getElementById('ee5').style.display !== 'block' ? 'block': 'none';
+      break;
+    }
+    case 9: {
+      document.getElementById('ee6').style.display = document.getElementById('ee6').style.display !== 'block' ? 'block': 'none';
+      break;
+    }
+    default: {}
+  }
+}
+window.expandGuide = expandGuide;
 
 })();
 

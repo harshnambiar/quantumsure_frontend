@@ -31,8 +31,9 @@
   <div id="user-switcher" style="margin: 15px 0; padding: 10px; border: 1px solid #eee; border-radius: 8px; display: flex;align-items: center;">
     <strong>Current User:</strong> <span id="current-user">None</span>
 
-    <button onclick="switchUser()" style="margin-left: 10px;width: 100px; padding: 5px;">Switch User</button>
-    <button onclick="logoutUser()" style="margin-left: 5px; width: 100px; background: #dc3545; padding: 5px;">Log Out</button>
+    <button onclick="switchUser()" style="margin-left: 10px;width: 66px; padding: 5px;">Switch User</button>
+    <button onclick="loginUser()" style="margin-left: 5px; width: 66px; background: #dc3545; padding: 5px;">Add Account</button>
+    <button onclick="logoutUser()" style="margin-left: 5px; width: 66px; padding: 5px;">Logout Account</button>
     <div class='dummy'></div>
     <div class="flow-selector">
         <button class="flow-menu-btn" onclick="toggleFlowMenu(event)">
@@ -263,6 +264,24 @@
 </section>
 
   <div id="output" class="op"></div>
+   <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeForm();">&times;</span>
+            <h2 style="color: #00ff88">Enter Key Details</h2>
+            <form id="keyForm">
+                <label for="apiKey" style="color:#0088ff;">API Key</label>
+                <input type="text" id="apiKey" name="apiKey" required>
+
+                <label for="encryptedKey" style="color: #0088ff">Encrypted Key</label>
+                <input type="password" id="encryptedKey" name="encryptedKey" required>
+
+                <label for="alias" style="color: #0088ff">Alias</label>
+                <input type="text" id="alias" name="alias" required>
+
+                <button onclick="addAccount();" type="button" style="background-color: #00ff88;color: #111111">Save</button>
+            </form>
+        </div>
+    </div>
 <footer>
         <p>Quantumsure Inc &copy; 2025</p>
     </footer>

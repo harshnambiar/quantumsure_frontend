@@ -700,31 +700,6 @@ window.loadplan = async () => {
 
 };
 
-async function loginUser(){
-  let sessions = JSON.parse(localStorage.getItem(USER_SESSIONS) || '[]');
-  console.log(sessions[0]);
-  const modal = document.getElementById('myModal');
-  modal.style.display = 'flex';
-}
-window.loginUser = loginUser;
-
-async function closeForm(){
-  const modal = document.getElementById('myModal');
-  modal.style.display = 'none';
-}
-window.closeForm = closeForm;
-
-async function addAccount(){
-    const form = document.getElementById('keyForm');
-    const modal = document.getElementById('myModal');
-    const apiKey = document.getElementById('apiKey').value.trim();
-    const encryptedKey = document.getElementById('encryptedKey').value.trim();
-    const alias = document.getElementById('alias').value.trim();
-    console.log(alias);
-    modal.style.display = 'none';
-    form.reset();
-}
-window.addAccount = addAccount;
 
 async function toggleFlowMenu() {
   const dropdown = document.getElementById('flow-dropdown');
