@@ -702,7 +702,7 @@ window.loadplan = async () => {
 
 async function loginUser(){
   let sessions = JSON.parse(localStorage.getItem(USER_SESSIONS) || '[]');
-  console.log(sessions[0]);
+  console.log(sessions);
   const modal = document.getElementById('myModal');
   modal.style.display = 'flex';
 }
@@ -720,7 +720,35 @@ async function addAccount(){
     const apiKey = document.getElementById('apiKey').value.trim();
     const encryptedKey = document.getElementById('encryptedKey').value.trim();
     const alias = document.getElementById('alias').value.trim();
-    console.log(alias);
+    const sessions = JSON.parse(localStorage.getItem(USER_SESSIONS) || '[]');
+    var i = 0;
+    //console.log(sessions[0].apiKey);
+    //console.log(sessions[0].encryptedPrivateKey);
+    while (i < sessions.length){
+      let key = sessions[i].apiKey;
+      if (key == apiKey){
+        modal.style.display = 'none';
+        form.reset();
+        alert('You are already logged in on this device this this account');
+        return;
+      }
+      i++;
+    }
+    const response = await fetch(`${API_BASE_URL}/user/public-key/${apiKey}`, {
+      method: 'GET',
+      headers: {
+        'api_key': apiKey,  // ← Auth as ME
+        'Content-Type': 'application/json'
+      },
+    });
+    if (!response.ok){
+      modal.style.display = 'none';
+      form.reset();
+      alert('Invalid api key. Please choose one that actually exists.');
+      return;
+    };
+
+    saveSession(apiKey, encryptedKey, alias);
     modal.style.display = 'none';
     form.reset();
 }
@@ -791,3 +819,56 @@ async function expandGuide(k){
   }
 }
 window.expandGuide = expandGuide;
+
+
+// === Export Credentials ===
+
+
+function downloadTxtFile(filename, text) {
+  const a = document.createElement('a');
+  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+
+function generateCredentials(ak, epk) {
+
+
+  // Format the text content clearly
+  const text = `Your Account Credentials
+  ================================
+
+  API Key: ${ak}
+
+  Encrypted Private Key: ${epk}
+
+  ================================
+  IMPORTANT:
+  - Save this file in a safe place.
+  - Do not share these credentials with anyone.
+  - This file was generated on your device and was never sent to any server.
+  - You will not be able to view these credentials again after closing this page.
+
+  Generated on: ${new Date().toLocaleString()}
+  `;
+
+  // Trigger download
+  downloadTxtFile("quantumsure_".concat(ak).concat(".txt"), text);
+}
+
+async function exportAccount(){
+  const apiKey = localStorage.getItem('apiKey');
+  const epk = localStorage.getItem('encryptedPrivateKey');
+  if (!apiKey || !epk){
+    alert("You are not logged in to any account.");
+    return;
+  }
+  else {
+    generateCredentials(apiKey, epk);
+  }
+}
+window.exportAccount = exportAccount;

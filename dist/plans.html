@@ -47,6 +47,8 @@
           <a href="#" data-flow="share" onclick="showFlow(5);">Share with Team</a>
           <a href="#" data-flow="use-shared" onclick="showFlow(6);">Use Shared Password</a>
           <a href="#" data-flow="groups" onclick="showFlow(7);">Share Groups</a>
+          <a href="#" data-flow="export" onclick="showFlow(8);">Export Credentials</a>
+
 
         </div>
       </div>
@@ -262,6 +264,17 @@
       <p>Share a password or access token with all members of your Share Group. Requires the Group ID, the Password ID obtained from the Vault section, the type of token (either password or oauth_token), and your Master Password. The result of the operation can be viewed at the bottom of the page. On success, it will generate a Share ID for each member of the group.</p>
     </section>
 </section>
+<section class="content-wrapper" id="exportflow">
+    <section class="content2">
+      <h2>Export Credentials</h2>
+
+      <button onclick="exportAccount()">Export Credentials</button>
+    </section>
+    <section class="content2">
+      <h3>Guide</h3>
+      <p>This action will create a txt file with your API Key and Encrypted Private Key, and download it on your current device. The file is being safely generated on your end, and QuantumSure does NOT know of its contents. Please keep the file safe from unauthorized view, or even better, create a hard copy of its contents and then delete the file.</p>
+    </section>
+  </section>
 
   <div id="output" class="op"></div>
    <div id="myModal" class="modal">
