@@ -48,6 +48,7 @@
           <a href="#" data-flow="use-shared" onclick="showFlow(6);">Use Shared Password</a>
           <a href="#" data-flow="groups" onclick="showFlow(7);">Share Groups</a>
           <a href="#" data-flow="export" onclick="showFlow(8);">Export Credentials</a>
+          <a href="#" data-flow="clear" onclick="showFlow(9);">Clear Account Data</a>
 
 
         </div>
@@ -273,6 +274,18 @@
     <section class="content2">
       <h3>Guide</h3>
       <p>This action will create a txt file with your API Key and Encrypted Private Key, and download it on your current device. The file is being safely generated on your end, and QuantumSure does NOT know of its contents. Please keep the file safe from unauthorized view, or even better, create a hard copy of its contents and then delete the file.</p>
+    </section>
+  </section>
+
+  <section class="content-wrapper" id="clearflow">
+    <section class="content2">
+      <h2>Clear Account Data</h2>
+
+      <button onclick="clearAccount()">Clear Data</button>
+    </section>
+    <section class="content2">
+      <h3>Guide</h3>
+      <p>This action will delete the API Key, Encrypted Private Key, and any other data stored in your browser as cache. Please note that this doesn't delete your QuantumSure account. It is recommended to use this feature on Public Computers or machines you share with other users.</p>
     </section>
   </section>
 

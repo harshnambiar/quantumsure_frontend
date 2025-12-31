@@ -872,3 +872,22 @@ async function exportAccount(){
   }
 }
 window.exportAccount = exportAccount;
+
+
+// === Clear Account ===
+
+async function clearAccount(){
+  const apiKey = localStorage.getItem('apiKey');
+  let sessions = JSON.parse(localStorage.getItem(USER_SESSIONS) || '[]');
+  const ind = sessions.findIndex(s => s.apiKey === apiKey);
+  if (ind != -1) {
+    sessions.splice(ind, 1);
+  } else {
+    alert('Invalid Key');
+    return;
+  }
+  localStorage.setItem(USER_SESSIONS, JSON.stringify(sessions));
+  await logoutUser();
+  alert('Account data cleared.');
+}
+window.clearAccount = clearAccount;
