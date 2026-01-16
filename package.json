@@ -7,6 +7,7 @@
         "build": "webpack --mode production -w"
     },
     "dependencies": {
+        "@noble/ciphers": "^2.1.1",
         "axios": "^1.6.7",
         "base64-arraybuffer": "^1.0.2",
         "buffer": "^6.0.3",

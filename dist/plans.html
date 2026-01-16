@@ -47,8 +47,10 @@
           <a href="#" data-flow="share" onclick="showFlow(5);">Share with Team</a>
           <a href="#" data-flow="use-shared" onclick="showFlow(6);">Use Shared Password</a>
           <a href="#" data-flow="groups" onclick="showFlow(7);">Share Groups</a>
-          <a href="#" data-flow="export" onclick="showFlow(8);">Export Credentials</a>
-          <a href="#" data-flow="clear" onclick="showFlow(9);">Clear Account Data</a>
+          <a href="#" data-flow="efiles" onclick="showFlow(8);">Encrypt File</a>
+          <a href="#" data-flow="dfiles" onclick="showFlow(9);">Decrypt File</a>
+          <a href="#" data-flow="export" onclick="showFlow(10);">Export Credentials</a>
+          <a href="#" data-flow="clear" onclick="showFlow(11);">Clear Account Data</a>
 
 
         </div>
@@ -265,6 +267,32 @@
       <p>Share a password or access token with all members of your Share Group. Requires the Group ID, the Password ID obtained from the Vault section, the type of token (either password or oauth_token), and your Master Password. The result of the operation can be viewed at the bottom of the page. On success, it will generate a Share ID for each member of the group.</p>
     </section>
 </section>
+
+<section class="content-wrapper" id="efileflow">
+    <section class="content2">
+      <h2>Encrypt File</h2>
+      <input type="file" id="encrypt-file" />
+      <button onclick="encryptFile()">Encrypt</button>
+    </section>
+    <section class="content2">
+      <h3>Guide</h3>
+      <p>This action will create an encrypted and quantum-secure equivalent file for your inputted file. It will then be stored on your device. Please keep it safe as it cannot be recovered by us since QuantumSure is NOT storing a copy of it.</p>
+    </section>
+  </section>
+
+<section class="content-wrapper" id="dfileflow">
+    <section class="content2">
+      <h2>Decrypt File</h2>
+      <input type="file" id="decrypt-file" accept=".qsecure"/>
+      <button onclick="decryptFile()">Decrypt</button>
+    </section>
+    <section class="content2">
+      <h3>Guide</h3>
+      <p>This action will decrypt the quantum secure file that you created in the Encrypt File section and provide you with the decrypted version to download. It will then be stored on your device. Please keep it safe as it cannot be recovered by us since QuantumSure is NOT storing a copy of it. If the contents of the file are important or confidential, it is highly recommended to store them safely in external storage.</p>
+    </section>
+  </section>
+
+
 <section class="content-wrapper" id="exportflow">
     <section class="content2">
       <h2>Export Credentials</h2>

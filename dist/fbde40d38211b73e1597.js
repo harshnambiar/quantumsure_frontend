@@ -896,17 +896,6 @@ window.clearAccount = clearAccount;
 
 // === Files ===
 
-
-// Concat helper
-  function concatBytes(...arrays) {
-    const total = arrays.reduce((acc, a) => acc + a.length, 0);
-    const result = new Uint8Array(total);
-    let offset = 0;
-    for (const arr of arrays) result.set(arr, offset), offset += arr.length;
-    return result;
-  }
-
-
 async function encryptFile() {
     const fileInput = document.getElementById('encrypt-file');
     const file = fileInput.files?.[0];
@@ -925,21 +914,17 @@ async function encryptFile() {
     statusDiv.style.color = 'blue';
 
     try {
-      const publicKeyEncoded = await getMyPublicKey();
-      const publicKey = new Uint8Array(decode(publicKeyEncoded))// Uint8Array
+      const publicKey = getPublicKey();  // Uint8Array
 
       // Read file
       const fileBytes = new Uint8Array(await file.arrayBuffer());
 
-      const kem = new MlKem1024();
       // ML-KEM-1024 encapsulate → get ciphertext + shared secret (our symmetric key)
-      const ec =
-        await kem.encap(publicKey);
-      const kemCiphertext = ec[0];
-      const fileKey = ec[1];
+      const { ciphertext: kemCiphertext, sharedSecret: fileKey } =
+        await MlKem1024.encap(publicKey);
+
       // Encrypt file content with XChaCha20-Poly1305
       const nonce = randomBytes(24);
-
       const encryptedFile = xchacha20poly1305(fileKey, nonce).encrypt(fileBytes);
 
       // Bundle: version (2B) | kemLen (2B) | kemCiphertext | nonce (24B) | encryptedFile
@@ -956,7 +941,6 @@ async function encryptFile() {
         nonce,
         encryptedFile
       );
-
 
       // Download
       const blob = new Blob([bundle], { type: 'application/octet-stream' });
