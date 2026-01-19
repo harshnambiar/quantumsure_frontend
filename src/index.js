@@ -979,3 +979,97 @@ async function encryptFile() {
 }
 window.encryptFile = encryptFile;
 
+
+
+async function decryptFile() {
+    const fileInput = document.getElementById('decrypt-file');
+    const mp = document.getElementById('file-mp').value;
+
+    const file = fileInput.files?.[0];
+    if (!file) {
+        alert('Please select a .qsecure file first.');
+        return;
+    }
+
+    let statusDiv = document.getElementById('decrypt-status');
+    if (!statusDiv) {
+        statusDiv = document.createElement('div');
+        statusDiv.id = 'decrypt-status';
+        fileInput.parentElement.appendChild(statusDiv);
+    }
+    statusDiv.textContent = 'Decrypting...';
+    statusDiv.style.color = 'blue';
+
+    try {
+        // We need the private key to decapsulate
+        const privateKeyEncoded = localStorage.getItem('encryptedPrivateKey');
+        if (!privateKeyEncoded || privateKeyEncoded == "" || privateKeyEncoded == null){
+          alert('You are not logged in!');
+          return;
+        }
+
+        const privateKeyB64 = await decryptPrivateKey(privateKeyEncoded, mp);
+
+        const privateKey = new Uint8Array(decode(privateKeyB64)); // Uint8Array
+
+        // Read the encrypted file
+        const bundle = new Uint8Array(await file.arrayBuffer());
+
+        // Parse the structure:
+        // version (2 bytes) | kemLen (2 bytes) | kemCiphertext | nonce (24 bytes) | encrypted data
+        if (bundle.length < 2 + 2 + 24) {
+            throw new Error("File is too short to be valid");
+        }
+
+        const version = bundle.slice(0, 2);
+        if (version[0] !== 1 || version[1] !== 0) {
+            throw new Error(`Unsupported file version: ${version[0]}.${version[1]}`);
+        }
+
+        const kemLen = (bundle[2] << 8) | bundle[3];
+        if (kemLen < 1568 || kemLen > 2000) { // ML-KEM-1024 ciphertext ≈ 1568 bytes
+            throw new Error("Invalid KEM ciphertext length");
+        }
+
+        const offset = 4;
+        const kemCiphertext = bundle.slice(offset, offset + kemLen);
+        const nonce = bundle.slice(offset + kemLen, offset + kemLen + 24);
+        const encryptedFile = bundle.slice(offset + kemLen + 24);
+
+        if (encryptedFile.length === 0) {
+            throw new Error("No encrypted data found");
+        }
+
+        // Decapsulate → recover the file key (shared secret)
+        const kem = new MlKem1024();
+        const fileKey = await kem.decap(kemCiphertext, privateKey);
+
+        // Decrypt the file content
+        const decryptedBytes = xchacha20poly1305(fileKey, nonce).decrypt(encryptedFile);
+
+        // Download decrypted file (original name = filename without .qsecure)
+        let originalName = file.name;
+        if (originalName.toLowerCase().endsWith('.qsecure')) {
+            originalName = originalName.slice(0, -8);
+        }
+
+        const blob = new Blob([decryptedBytes], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = originalName || 'decrypted_file';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        statusDiv.textContent = 'Decryption complete — file downloaded';
+        statusDiv.style.color = 'green';
+    } catch (err) {
+        console.error(err);
+        statusDiv.textContent = 'Decryption failed: ' + (err.message || 'Unknown error');
+        statusDiv.style.color = 'red';
+    }
+}
+
+window.decryptFile = decryptFile;
