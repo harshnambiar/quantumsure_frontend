@@ -269,16 +269,34 @@
 </section>
 
 <section class="content-wrapper" id="efileflow">
-    <section class="content2">
-      <h2>Encrypt File</h2>
-      <input type="file" id="encrypt-file" />
-      <button onclick="encryptFile()">Encrypt</button>
-    </section>
-    <section class="content2">
+  <section class="content2">
+    <div class="faq-header">
+            <h2 class="faq-title">Encrypt File for Me</h2>
+            <span class="faq-toggle" onclick="expandGuide(10);">?</span>
+      </div>
+    <input type="file" id="encrypt-file" />
+    <button onclick="encryptFile()">Encrypt</button>
+  </section>
+  <section class="content3" id="ff1">
       <h3>Guide</h3>
       <p>This action will create an encrypted and quantum-secure equivalent file for your inputted file. It will then be stored on your device. Please keep it safe as it cannot be recovered by us since QuantumSure is NOT storing a copy of it.</p>
-    </section>
   </section>
+
+
+    <section class="content2">
+    <div class="faq-header">
+            <h2 class="faq-title">Encrypt File for Someone Else</h2>
+            <span class="faq-toggle" onclick="expandGuide(11);">?</span>
+      </div>
+    <input type="file" id="encrypt-file-someone" />
+    <input id="file-api" placeholder="That Person's API Key" />
+    <button onclick="encryptFileForSomeone()">Encrypt</button>
+  </section>
+  <section class="content3" id="ff2">
+      <h3>Guide</h3>
+      <p>This action will create an encrypted and quantum-secure equivalent file for your inputted file for the person whose API Key you are entering. It will then be stored on your device. You can then send it to them securely, and it can only be decrypted by them. Please keep it safe as it cannot be recovered by us since QuantumSure is NOT storing a copy of it.</p>
+  </section>
+</section>
 
 <section class="content-wrapper" id="dfileflow">
     <section class="content2">

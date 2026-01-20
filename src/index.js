@@ -816,6 +816,14 @@ async function expandGuide(k){
       document.getElementById('ee6').style.display = document.getElementById('ee6').style.display !== 'block' ? 'block': 'none';
       break;
     }
+    case 10: {
+      document.getElementById('ff1').style.display = document.getElementById('ff1').style.display !== 'block' ? 'block': 'none';
+      break;
+    }
+    case 11: {
+      document.getElementById('ff2').style.display = document.getElementById('ff2').style.display !== 'block' ? 'block': 'none';
+      break;
+    }
     default: {}
   }
 }
@@ -979,6 +987,85 @@ async function encryptFile() {
 }
 window.encryptFile = encryptFile;
 
+
+async function encryptFileForSomeone() {
+    const fileInput = document.getElementById('encrypt-file-someone');
+    const file = fileInput.files?.[0];
+    if (!file) {
+      alert('Please select a file first.');
+      return;
+    }
+
+    const targetApiKey = document.getElementById('file-api').value;
+
+    if (targetApiKey == "" || !targetApiKey || targetApiKey == null){
+      alert('API Key cannot be blank');
+      return;
+    }
+
+    let statusDiv = document.getElementById('encrypt-someone-status');
+    if (!statusDiv) {
+      statusDiv = document.createElement('div');
+      statusDiv.id = 'encrypt-someone-status';
+      fileInput.parentElement.appendChild(statusDiv);
+    }
+    statusDiv.textContent = 'Encrypting...';
+    statusDiv.style.color = 'blue';
+
+    try {
+      const publicKeyEncoded = await getPublicKey(targetApiKey);
+      const publicKey = new Uint8Array(decode(publicKeyEncoded))// Uint8Array
+
+      // Read file
+      const fileBytes = new Uint8Array(await file.arrayBuffer());
+
+      const kem = new MlKem1024();
+      // ML-KEM-1024 encapsulate → get ciphertext + shared secret (our symmetric key)
+      const ec =
+        await kem.encap(publicKey);
+      const kemCiphertext = ec[0];
+      const fileKey = ec[1];
+      // Encrypt file content with XChaCha20-Poly1305
+      const nonce = randomBytes(24);
+
+      const encryptedFile = xchacha20poly1305(fileKey, nonce).encrypt(fileBytes);
+
+      // Bundle: version (2B) | kemLen (2B) | kemCiphertext | nonce (24B) | encryptedFile
+      const version = new Uint8Array([1, 0]);
+      const kemLenBytes = new Uint8Array([
+        (kemCiphertext.length >> 8) & 0xff,
+        kemCiphertext.length & 0xff
+      ]);
+
+      const bundle = concatBytes(
+        version,
+        kemLenBytes,
+        kemCiphertext,
+        nonce,
+        encryptedFile
+      );
+
+
+      // Download
+      const blob = new Blob([bundle], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name + '_'.concat(targetApiKey) + '.qsecure';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      statusDiv.textContent = 'Encryption complete — file downloaded as .qsecure';
+      statusDiv.style.color = 'green';
+    } catch (err) {
+      console.error(err);
+      statusDiv.textContent = 'Encryption failed: ' + (err.message || 'Unknown error');
+      statusDiv.style.color = 'red';
+    }
+}
+window.encryptFileForSomeone = encryptFileForSomeone;
 
 
 async function decryptFile() {
