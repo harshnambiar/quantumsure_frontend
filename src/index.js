@@ -202,12 +202,12 @@ async function getMyPublicKey() {
   return public_key;
 }
 
-async function storePassword(apiKey, site, username, password) {
+async function storePassword(apiKey, site, username, password, secretPhrase) {
   const publicKey = await getMyPublicKey();
   const { encrypted_data } = await quantumResistantEncrypt(password, publicKey);
   const response = await fetch(`${API_BASE_URL}/password/store`, {
     method: 'POST',
-    headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+    headers: { 'api_key': apiKey, 'secret_phrase': secretPhrase, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       data: { site, username, encrypted_text: encrypted_data }
     }),
@@ -271,10 +271,10 @@ async function shareWithUsers(apiKey, passwordId, masterPassword, encryptedPriva
   return await shareRes.json();
 }
 
-async function revokeSharedPassword(apiKey, shareId) {
+async function revokeSharedPassword(apiKey, shareId, secretPhrase) {
   const response = await fetch(`${API_BASE_URL}/share/revoke`, {
     method: 'POST',
-    headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+    headers: { 'api_key': apiKey, 'secret_phrase': secretPhrase, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       data: { share_id: shareId }
     }),
@@ -284,10 +284,10 @@ async function revokeSharedPassword(apiKey, shareId) {
 }
 
 
-async function deleteSharedPassword(apiKey, shareId) {
+async function deleteSharedPassword(apiKey, shareId, secretPhrase) {
   const response = await fetch(`${API_BASE_URL}/share/delete`, {
     method: 'POST',
-    headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+    headers: { 'api_key': apiKey, 'secret_phrase': secretPhrase, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       data: { share_id: shareId }
     }),
@@ -324,50 +324,50 @@ async function useSharedPassword(apiKey, shareId, masterPassword, encryptedPriva
 
 }
 
-async function createShareGroup1(apiKey, groupName){
+async function createShareGroup1(apiKey, groupName, secretPhrase){
     const response = await fetch(`${API_BASE_URL}/sharegroup/create`, {
         method: 'POST',
-        headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+        headers: { 'api_key': apiKey, 'secret_phrase': secretPhrase, 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: { name: groupName } }),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
 }
 
-async function addShareGroupMember(apiKey, groupId, memberApi){
+async function addShareGroupMember(apiKey, groupId, memberApi, secretPhrase){
     const response = await fetch(`${API_BASE_URL}/sharegroup/add`, {
         method: 'POST',
-        headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+        headers: { 'api_key': apiKey, 'secret_phrase': secretPhrase, 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: { group_id: groupId, member_api_keys: [memberApi] } }),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
 }
 
-async function removeShareGroupMember(apiKey, groupId, memberApi){
+async function removeShareGroupMember(apiKey, groupId, memberApi, secretPhrase){
     const response = await fetch(`${API_BASE_URL}/sharegroup/remove`, {
         method: 'POST',
-        headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+        headers: { 'api_key': apiKey, 'secret_phrase': secretPhrase, 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: { group_id: groupId, member_api_keys: [memberApi] } }),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
 }
 
-async function revokeShareGroup1(apiKey, groupId){
+async function revokeShareGroup1(apiKey, groupId, secretPhrase){
     const response = await fetch(`${API_BASE_URL}/sharegroup/revoke`, {
         method: 'POST',
-        headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+        headers: { 'api_key': apiKey, 'secret_phrase': secretPhrase, 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: { group_id: groupId } }),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
 }
 
-async function deleteShareGroup1(apiKey, groupId){
+async function deleteShareGroup1(apiKey, groupId, secretPhrase){
     const response = await fetch(`${API_BASE_URL}/sharegroup/delete`, {
         method: 'POST',
-        headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+        headers: { 'api_key': apiKey, 'secret_phrase': secretPhrase, 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: { group_id: groupId } }),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -406,10 +406,11 @@ window.storePassword = async () => {
   const site = document.getElementById('site').value;
   const username = document.getElementById('username').value;
   const password = document.getElementById('password').value;
+  const secret = document.getElementById('secret-phrase0').value;
   if (!site || !username || !password) return alert('Fill all fields.');
 
   try {
-    const r = await storePassword(apiKey, site, username, password);
+    const r = await storePassword(apiKey, site, username, password, secret);
     document.getElementById('output').innerText = `Stored! ID: ${r.password_id}`;
   } catch (e) {
     document.getElementById('output').innerText = `Error: ${e.message}`;
@@ -524,11 +525,12 @@ window.useShared = async () => {
 
 window.revokeShared = async () => {
   const shareId = document.getElementById('share-id2').value;
+  const secret = document.getElementById('secret-phrase2').value;
   const apiKey = localStorage.getItem("apiKey");
   if (!shareId) return alert('Fill all fields.');
 
   try {
-    const r = await revokeSharedPassword(apiKey, shareId);
+    const r = await revokeSharedPassword(apiKey, shareId, secret);
     document.getElementById('output').innerText = `Successfully Revoked Shared Token.`;
   } catch (e) {
     document.getElementById('output').innerText = `Error: ${e.message}`;
@@ -537,11 +539,12 @@ window.revokeShared = async () => {
 
 window.deleteShared = async () => {
   const shareId = document.getElementById('share-id3').value;
+  const secret = document.getElementById('secret-phrase3').value;
   const apiKey = localStorage.getItem("apiKey");
   if (!shareId) return alert('Fill all fields.');
 
   try {
-    const r = await deleteSharedPassword(apiKey, shareId);
+    const r = await deleteSharedPassword(apiKey, shareId, secret);
     document.getElementById('output').innerText = `Successfully Deleted Shared Token.`;
   } catch (e) {
     document.getElementById('output').innerText = `Error: ${e.message}`;
@@ -550,11 +553,12 @@ window.deleteShared = async () => {
 
 window.createShareGroup = async () => {
   const groupName = document.getElementById('group-name').value;
+  const secret = document.getElementById('secret-phrase4').value;
   const apiKey = localStorage.getItem("apiKey");
   if (!groupName) return alert('Fill all fields.');
 
   try {
-    const r = await createShareGroup1(apiKey, groupName);
+    const r = await createShareGroup1(apiKey, groupName, secret);
     console.log(r);
     document.getElementById('output').innerText = `Share Group Created. Group id: `.concat(r.group_id);
   } catch (e) {
@@ -565,11 +569,12 @@ window.createShareGroup = async () => {
 window.addGroupMember = async () => {
   const groupId = document.getElementById('add-group-id').value;
   const memberApi = document.getElementById('add-member-key').value;
+  const secret = document.getElementById('secret-phrase5').value;
   const apiKey = localStorage.getItem("apiKey");
   if (!groupId || !memberApi) return alert('Fill all fields.');
 
   try {
-    const r = await addShareGroupMember(apiKey, groupId, memberApi);
+    const r = await addShareGroupMember(apiKey, groupId, memberApi, secret);
     document.getElementById('output').innerText = `Added Member.`;
   } catch (e) {
     document.getElementById('output').innerText = `Error: ${e.message}`;
@@ -579,11 +584,12 @@ window.addGroupMember = async () => {
 window.removeGroupMember = async () => {
   const groupId = document.getElementById('remove-group-id').value;
   const memberApi = document.getElementById('remove-member-key').value;
+  const secret = document.getElementById('secret-phrase6').value;
   const apiKey = localStorage.getItem("apiKey");
   if (!groupId || !memberApi) return alert('Fill all fields.');
 
   try {
-    const r = await removeShareGroupMember(apiKey, groupId, memberApi);
+    const r = await removeShareGroupMember(apiKey, groupId, memberApi, secret);
     document.getElementById('output').innerText = `Removed Member.`;
   } catch (e) {
     document.getElementById('output').innerText = `Error: ${e.message}`;
@@ -592,11 +598,12 @@ window.removeGroupMember = async () => {
 
 window.revokeShareGroup = async () => {
   const groupId = document.getElementById('revoke-group-id').value;
+  const secret = document.getElementById('secret-phrase7').value;
   const apiKey = localStorage.getItem("apiKey");
   if (!groupId) return alert('Fill all fields.');
 
   try {
-    const r = await revokeShareGroup1(apiKey, groupId);
+    const r = await revokeShareGroup1(apiKey, groupId, secret);
     document.getElementById('output').innerText = `Share Group Revoked.`;
   } catch (e) {
     document.getElementById('output').innerText = `Error: ${e.message}`;
@@ -605,11 +612,12 @@ window.revokeShareGroup = async () => {
 
 window.deleteShareGroup = async () => {
   const groupId = document.getElementById('delete-group-id').value;
+  const secret = document.getElementById('secret-phrase8').value;
   const apiKey = localStorage.getItem("apiKey");
   if (!groupId) return alert('Fill all fields.');
 
   try {
-    const r = await deleteShareGroup1(apiKey, groupId);
+    const r = await deleteShareGroup1(apiKey, groupId, secret);
     document.getElementById('output').innerText = `Share Group Deleted.`;
   } catch (e) {
     document.getElementById('output').innerText = `Error: ${e.message}`;

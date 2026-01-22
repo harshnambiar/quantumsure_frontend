@@ -75,7 +75,8 @@
       <h2>Store Password</h2>
       <input type="text" id="site" placeholder="Site">
       <input type="text" id="username" placeholder="Username">
-      <input type="text" id="password" placeholder="Password">
+      <input type="password" id="password" placeholder="Password">
+      <input type="password" id="secret-phrase0" placeholder="Your Secret Phrase">
       <button onclick="generatePassword()">Generate</button>
       <button onclick="storePassword()">Store</button>
     </section>
@@ -138,6 +139,7 @@
       </div>
 
       <input type="text" id="share-id2" placeholder="Share ID">
+      <input type="password" id="secret-phrase2" placeholder="Your Secret Phrase">
       <button onclick="revokeShared()">Revoke</button>
     </section>
 
@@ -153,6 +155,8 @@
             <span class="faq-toggle" onclick="expandGuide(3);">?</span>
       </div>
       <input type="text" id="share-id3" placeholder="Share ID">
+      <input type="password" id="secret-phrase3" placeholder="Your Secret Phrase">
+
       <button onclick="deleteShared()">Delete</button>
     </section>
     <section class="content3" id="dd3">
@@ -182,6 +186,7 @@
             <span class="faq-toggle" onclick="expandGuide(4);">?</span>
       </div>
     <input id="group-name" placeholder="Group name (e.g. Dev Team)" />
+    <input type="password" id="secret-phrase4" placeholder="Your Secret Phrase">
     <button onclick="createShareGroup()">Create</button>
   </section>
 
@@ -198,6 +203,7 @@
       </div>
     <input id="add-group-id" placeholder="Group ID" />
     <input id="add-member-key" placeholder="Recipient API key" />
+    <input type="password" id="secret-phrase5" placeholder="Your Secret Phrase">
     <button onclick="addGroupMember()">Add</button>
     </section>
     <section class="content3" id="ee2">
@@ -213,6 +219,7 @@
       </div>
     <input id="remove-group-id" placeholder="Group ID" />
     <input id="remove-member-key" placeholder="Recipient API key" />
+    <input type="password" id="secret-phrase6" placeholder="Your Secret Phrase">
     <button onclick="removeGroupMember()">Remove</button>
   </section>
   <section class="content3" id="ee3">
@@ -227,6 +234,7 @@
             <span class="faq-toggle" onclick="expandGuide(7);">?</span>
       </div>
     <input id="revoke-group-id" placeholder="Group ID" />
+     <input type="password" id="secret-phrase7" placeholder="Your Secret Phrase">
     <button onclick="revokeShareGroup()">Delete</button>
 
   </section>
@@ -242,6 +250,7 @@
             <span class="faq-toggle" onclick="expandGuide(8);">?</span>
       </div>
     <input id="delete-group-id" placeholder="Group ID" />
+     <input type="password" id="secret-phrase8" placeholder="Your Secret Phrase">
     <button onclick="deleteShareGroup()">Delete</button>
   </section>
   <section class="content3" id="ee5">
@@ -358,6 +367,11 @@
 <footer>
         <p>Quantumsure Inc &copy; 2025</p>
     </footer>
+    <script>
+        document.getElementById("mobile-menu").addEventListener("click", function () {
+            document.querySelector(".nav-center").classList.toggle("nav-active");
+        });
+    </script>
 <script src="main.js"></script>
 </body>
 </html>
