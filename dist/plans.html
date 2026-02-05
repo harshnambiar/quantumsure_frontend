@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QuantumSure</title>
-  <link rel="shortcut icon" href="img/logo.png">
-    <link rel="stylesheet" href="main.css">
-
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>QuantumSure – Actions</title>
+    <link rel="shortcut icon" href="img/logo.png" />
+    <link rel="stylesheet" href="main.css" />
 </head>
 <body onload="loadplan();">
-<header>
+
+    <header>
         <nav>
             <div class="logo">QuantumSure</div>
             <div class="menu-toggle" id="mobile-menu">
@@ -26,38 +26,37 @@
             </ul>
         </nav>
     </header>
-  <!-- ADD THIS BELOW <h1> -->
-  <div style="margin-bottom: 50px;"><br/></div>
-  <div id="user-switcher" style="margin: 15px 0; padding: 10px; border: 1px solid #eee; border-radius: 8px; display: flex;align-items: center;">
-    <strong>Current User:</strong> <span id="current-user">None</span>
 
-    <button onclick="switchUser()" style="margin-left: 10px;width: 66px; padding: 5px;">Switch User</button>
-    <button onclick="loginUser()" style="margin-left: 5px; width: 66px; background: #dc3545; padding: 5px;">Add Account</button>
-    <button onclick="logoutUser()" style="margin-left: 5px; width: 66px; padding: 5px;">Logout Account</button>
-    <div class='dummy'></div>
-    <div class="flow-selector">
-        <button class="flow-menu-btn" onclick="toggleFlowMenu(event)">
-          Menu ↓
-        </button>
-        <div class="flow-dropdown" id="flow-dropdown">
-          <a href="#" data-flow="create" onclick="showFlow(1);">Create Account</a>
-          <a href="#" data-flow="store" onclick="showFlow(2);">Store Password</a>
-          <a href="#" data-flow="vault" onclick="showFlow(3);">Vault</a>
-          <a href="#" data-flow="retrieve" onclick="showFlow(4);">Retrieve Password</a>
-          <a href="#" data-flow="share" onclick="showFlow(5);">Share with Team</a>
-          <a href="#" data-flow="use-shared" onclick="showFlow(6);">Use Shared Password</a>
-          <a href="#" data-flow="groups" onclick="showFlow(7);">Share Groups</a>
-          <a href="#" data-flow="efiles" onclick="showFlow(8);">Encrypt File</a>
-          <a href="#" data-flow="dfiles" onclick="showFlow(9);">Decrypt File</a>
-          <a href="#" data-flow="export" onclick="showFlow(10);">Export Credentials</a>
-          <a href="#" data-flow="clear" onclick="showFlow(11);">Clear Account Data</a>
+    <div style="height: 80px;"></div>
 
+    <div id="user-switcher">
+        <strong>Current User:</strong> <span id="current-user">None</span>
+        <button onclick="switchUser()">Switch</button>
+        <button onclick="loginUser()">Add Account</button>
+        <button onclick="logoutUser()">Logout</button>
+        <div class="dummy"></div>
 
+        <div class="flow-selector">
+            <button class="flow-menu-btn" onclick="toggleFlowMenu(event)">
+                Menu ↓
+            </button>
+            <div class="flow-dropdown" id="flow-dropdown">
+                <a href="#" data-flow="create" onclick="showFlow(1);">Create Account</a>
+                <a href="#" data-flow="store" onclick="showFlow(2);">Store Password</a>
+                <a href="#" data-flow="vault" onclick="showFlow(3);">Vault</a>
+                <a href="#" data-flow="retrieve" onclick="showFlow(4);">Retrieve Password</a>
+                <a href="#" data-flow="share" onclick="showFlow(5);">Share with Team</a>
+                <a href="#" data-flow="use-shared" onclick="showFlow(6);">Use Shared Password</a>
+                <a href="#" data-flow="groups" onclick="showFlow(7);">Share Groups</a>
+                <a href="#" data-flow="efiles" onclick="showFlow(8);">Encrypt File</a>
+                <a href="#" data-flow="dfiles" onclick="showFlow(9);">Decrypt File</a>
+                <a href="#" data-flow="export" onclick="showFlow(10);">Export Credentials</a>
+                <a href="#" data-flow="clear" onclick="showFlow(11);">Clear Account Data</a>
+            </div>
         </div>
-      </div>
-  </div>
+    </div>
 
-  <section class="content-wrapper" id="createflow">
+    <section class="content-wrapper" id="createflow">
     <section class="content2">
       <h2>Create Account</h2>
       <input type="password" id="create-master-password" placeholder="Master Password">
@@ -345,33 +344,36 @@
     </section>
   </section>
 
-  <div id="output" class="op"></div>
-   <div id="myModal" class="modal">
+    <div id="output" class="op"></div>
+
+    <div id="myModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeForm();">&times;</span>
-            <h2 style="color: #00ff88">Enter Key Details</h2>
+            <span class="close" onclick="closeForm();">×</span>
+            <h2>Enter Key Details</h2>
             <form id="keyForm">
-                <label for="apiKey" style="color:#0088ff;">API Key</label>
-                <input type="text" id="apiKey" name="apiKey" required>
+                <label for="apiKey">API Key</label>
+                <input type="text" id="apiKey" name="apiKey" required />
 
-                <label for="encryptedKey" style="color: #0088ff">Encrypted Key</label>
-                <input type="password" id="encryptedKey" name="encryptedKey" required>
+                <label for="encryptedKey">Encrypted Key</label>
+                <input type="password" id="encryptedKey" name="encryptedKey" required />
 
-                <label for="alias" style="color: #0088ff">Alias</label>
-                <input type="text" id="alias" name="alias" required>
+                <label for="alias">Alias</label>
+                <input type="text" id="alias" name="alias" required />
 
-                <button onclick="addAccount();" type="button" style="background-color: #00ff88;color: #111111">Save</button>
+                <button type="button" onclick="addAccount();">Save</button>
             </form>
         </div>
     </div>
-<footer>
-        <p>Quantumsure Inc &copy; 2025</p>
+
+    <footer>
+        <p>© 2026 QuantumSure Inc. All rights reserved.</p>
     </footer>
+
     <script>
-        document.getElementById("mobile-menu").addEventListener("click", function () {
+        document.getElementById("mobile-menu").addEventListener("click", () => {
             document.querySelector(".nav-center").classList.toggle("nav-active");
         });
     </script>
-<script src="main.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>

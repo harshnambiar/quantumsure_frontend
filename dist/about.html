@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About - QuantumSure</title>
-    <link rel="shortcut icon" href="img/logo.png">
-    <link rel="stylesheet" href="main.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>About QuantumSure - Quantum-Resistant Security</title>
+    <link rel="shortcut icon" href="img/logo.png" />
+    <link rel="stylesheet" href="main.css" />
 </head>
 <body>
+
     <header>
         <nav>
             <div class="logo">QuantumSure</div>
@@ -18,7 +19,7 @@
             </div>
             <ul class="nav-center">
                 <li><a href="./">Home</a></li>
-                <li><a href="about.html"  class="active">About</a></li>
+                <li><a href="about.html" class="active">About</a></li>
                 <li><a href="docs.html">Docs</a></li>
                 <li><a href="faqs.html">FAQ</a></li>
                 <li><a href="plans.html" class="btn">Get Started</a></li>
@@ -26,21 +27,24 @@
         </nav>
     </header>
 
-    <section class="content">
-        <h1>About QuantumSure</h1>
-        <p>QuantumSure is built by a team of experienced engineers, researchers, and developers with a combined experience in the field spanning over 40 years. With projects in AI, Blockchain Technology, Web 3, and Cryptography, the team continues to keep itself up-to-date with the most modern technology, and has positioned itself well to implement efficiently, effectively, and ethically the technologies of tomorrow. </p>
-        <p> In the field of quantum-resistant cryptography, QuantumSure, being dedicated to protecting digital assets and sensitive data of clients in the post-quantum era, have developed this platform, a SaaS based application that is lightweight and secure. QuantumSure does NOT save client passwords or keys on its servers, and only keeps track of the encryption and security aspect, and does not require sensitive decrypted client data to function. Our mission is to deliver robust, scalable, and user-friendly security solutions for everyone: small teams, budding startups, multimillion valuation entreprises, and Governments.</p>
-        <p>The detailed explanation for what we do is available in the <a href="faqs.html">FAQs</a> section.</p>
+    <section class="content-wrapper">
+        <div class="content2">
+            <h2>About QuantumSure</h2>
+            <p>QuantumSure is built by a team of experienced engineers, researchers, and developers with over 40 years of combined expertise across AI, blockchain, Web3, and advanced cryptography.</p>
+            <p>We stay at the forefront of emerging technologies to deliver efficient, effective, and ethical security solutions for the post-quantum era. QuantumSure is a lightweight, zero-knowledge SaaS platform designed to protect digital assets and sensitive data — without ever storing your passwords, keys, or decrypted information on our servers.</p>
+            <p>Our mission is to provide robust, scalable, and user-friendly quantum-resistant security to individuals, startups, enterprises, and governments alike.</p>
+            <p>For a detailed technical explanation of how we protect your data, see the <a class="linker" href="faqs.html">FAQs</a>.</p>
+        </div>
     </section>
-
+    <section style="visibility:hidden"><a>to be left blank</a><br/><br/><br/></section>
     <footer>
-        <p>Quantumsure Inc &copy; 2025</p>
+        <p>© 2026 QuantumSure Inc. All rights reserved.</p>
     </footer>
+
     <script>
-        document.getElementById("mobile-menu").addEventListener("click", function () {
+        document.getElementById("mobile-menu").addEventListener("click", () => {
             document.querySelector(".nav-center").classList.toggle("nav-active");
         });
     </script>
-    <script src="index.js"></script>
 </body>
 </html>

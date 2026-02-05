@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>FAQ - QuantumSure</title>
-    <link rel="shortcut icon" href="img/logo.png">
-    <link rel="stylesheet" href="main.css">
+    <link rel="shortcut icon" href="img/logo.png" />
+    <link rel="stylesheet" href="main.css" />
 </head>
 <body>
+
     <header>
         <nav>
             <div class="logo">QuantumSure</div>
@@ -20,121 +21,76 @@
                 <li><a href="./">Home</a></li>
                 <li><a href="about.html">About</a></li>
                 <li><a href="docs.html">Docs</a></li>
-                <li><a href="faqs.html"  class="active">FAQ</a></li>
+                <li><a href="faqs.html" class="active">FAQ</a></li>
                 <li><a href="plans.html" class="btn">Get Started</a></li>
             </ul>
         </nav>
     </header>
 
-    <section class="content">
-        <h1>Frequently Asked Questions</h1>
-        <div class="faq-item">
-            <h3>Why is my data at risk now?</h3>
-            <p>Quantum computing is a rapidly developing field, and these computing devices have the power to break your encryption relatively easily. For example, AES 128, Elliptic Curve Cryptography, and Digital Signature Algorithms (DSA), which is commonly used even in most government contracts, are all at risk now. Algorithms that took 120 years to break have ended up becoming susceptible to unauthorized decryption within minutes or hours, thanks to Quantum Computing.</p>
-        </div>
-        <div class="faq-item">
-            <h3>What are quantum computers anyway?</h3>
-            <p>A quantum computer is a type of computer that performs calculations and operations using principles of Quantum Mechanics, as opposed to traditional computers. Unlike the tradtional computers that use bits (0 and 1), they use Qubits or Quantum Bits. Qubits can have multiple values at the same time, a principle commonly postulated in Quantum Mechanics. As a result, they facilitate parallel processing, thereby lowering the time for simultaneous operations. They are also interconnected with each other via Entanglement, making the integration of bottom-up complex calculations a lot faster.</p>
-        </div>
-        <div class="faq-item">
-            <h3>What is quantum-resistant cryptography?</h3>
-            <p>It is a set of cryptographic algorithms designed to remain secure against attacks from quantum computers.</p>
-        </div>
-        <div class="faq-item">
-            <h3>What makes QuantumSure better than the password vault I already use?</h3>
-            <p>QuantumSure is one of the only password vault services that is Quantum secure. It is also one of the most compliant, providing you with an entire password sharing audit trail, in case required to monitor password sharing and access.</p>
-            <p>Let's take a look at how it compares to others:<br/>
-            <table style="width:100%">
-                <thead>
-                    <tr>
-                        <th style="border: 1px solid #00ff88;padding: 5px">Feature</th>
-                        <th style="border: 1px solid #00ff88;padding: 5px">QuantumSure</th>
-                        <th style="border: 1px solid #00ff88;padding: 5px">Your Password Vault</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Post Quantum Encryption</td>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Yes</td>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">No</td>
-                    </tr>
-                    <tr>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Zero-Trust Sharing</td>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Yes</td>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">No</td>
-                    </tr>
-                    <tr>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Group Sharing</td>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Yes (one click)</td>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">No</td>
-                    </tr>
-                    <tr>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Group Revocation</td>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Yes</td>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">No</td>
-                    </tr>
-                    <tr>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Stores Your Master Key on Server</td>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">No</td>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Yes</td>
-                    </tr>
-                    <tr>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Audit Trail</td>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Yes</td>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">No</td>
-                    </tr>
-                    <tr>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Transparent Algorithm</td>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">Yes (Kyber)</td>
-                        <td style="border: 1px solid #00ff88;padding: 5px; text-align: center">No</td>
-                    </tr>
+    <section class="content-wrapper">
+        <div class="content2">
+            <h2>Frequently Asked Questions</h2>
 
+            <div class="faq-item">
+                <h3>Why is my data at risk now?</h3>
+                <p>Quantum computers threaten widely used algorithms like RSA, ECC, and even AES-128 in the long term. What once took centuries to break could be cracked in hours or minutes.</p>
+            </div>
 
-                </tbody>
-            </table>
-            </p>
+            <div class="faq-item">
+                <h3>What are quantum computers?</h3>
+                <p>They use qubits instead of bits, enabling superposition and entanglement. This allows them to solve certain problems (like factoring large numbers) exponentially faster than classical computers.</p>
+            </div>
 
-        </div>
-        <div class="faq-item">
-            <h3>How does QuantumSure protect my data?</h3>
-            <p>QuantumSure uses NIST-approved post-quantum algorithms and real-time monitoring to ensure robust security. Taking the threat of Quantum Computing very seriously, QuantumSure uses multilayered algorithms, integrating Fernet-like cryptography, Kyber 1024, and decoy keys to ensure that the client data is ready to stand to the test of hacking and malicious actors in a post-quantum world.</p>
-        </div>
-        <div class="faq-item">
-            <h3>Can I integrate QuantumSafe with my existing systems?</h3>
-            <p>Yes, our SaaS platform is designed for seamless integration. Check our <a href="docs.html">documentation</a> for details.</p>
-        <div class="faq-item">
-            <h3>Do I need to share my sensitive data for this?</h3>
-            <p>NO. QuantumSure works by doubly encrypting your passwords, first on your end, and then on our end. The Master Password you use while creating your account isn't stored by QuantumSure, meaning not even we can access your confidential data. </p>
-        <div class="faq-item">
-            <h3>Can I use already encrypted data instead?</h3>
-            <p>Yes! If you want to add an extra layer of security, you can store passwords after encrypting them with your own algorithms, and then storing them. QuantumSure is data-neutral, so it will store anything you want as a 'password'. Please remember that you need to decrypt in a similar manner on your end if you opt to do this.</p>
-        <div class="faq-item">
-            <h3>I forgot my Master Password. What can I do?</h3>
-            <p>QuantumSure does NOT store your Master Password and CANNOT access the decrypted passwords. Consequently, it mean that we cannot recover your Master Password for you if you lose it. Hence, please be sure to NEVER misplace or forget it.</p>
-        </div>
-        <div class="faq-item">
-            <h3>What is the pricing like?</h3>
-            <p>QuantumSure has different tiers. For small teams and individuals, it is $5.99 a month for a 1000 encrypt requests (decryption is free). For medium-sized companies, it is $12.99 for 15000 encrypt requests a month. For entreprise level clients, it is $49.99 for 100000 encrypt request a month. Please reach out to our team for signing up for these or a custom tier.</p>
-        </div>
-        <div class="faq-item">
-            <h3>Sounds good, where can I sign up?</h3>
-            <p>Please go to <a href="plans.html">Plans</a> and take a free trial. If you're satisfied, please reach out to our team at <a href="mailto:resurgencelabsofficial@gmail.com">this address</a> to discuss your budget and requirements.</p>
-        </div>
+            <div class="faq-item">
+                <h3>What is quantum-resistant cryptography?</h3>
+                <p>A family of algorithms designed to remain secure even against powerful quantum computers. Examples include lattice-based (Kyber), hash-based, code-based, and multivariate schemes.</p>
+            </div>
 
-        </div>
-        </div>
+            <div class="faq-item">
+                <h3>How is QuantumSure different from other password managers?</h3>
+                <p>QuantumSure is built from the ground up for post-quantum security using NIST-approved algorithms, zero-knowledge architecture, and unique sharing features — while most existing vaults will become vulnerable.</p>
+            </div>
+
+            <div class="faq-item">
+                <h3>How does QuantumSure protect my data?</h3>
+                <p>We use Kyber-1024 for key encapsulation, Fernet-like authenticated encryption, and proprietary decoy mechanisms — all performed client-side. Your Master Password and plaintext data are never sent to our servers.</p>
+            </div>
+
+            <div class="faq-item">
+                <h3>Do I need to give you my sensitive data?</h3>
+                <p>No. All encryption happens in your browser. We only store encrypted blobs and never see your passwords, keys, or Master Password.</p>
+            </div>
+
+            <div class="faq-item">
+                <h3>I forgot my Master Password — can you help?</h3>
+                <p>No — and that's by design. We never store your Master Password or recovery phrase. Keep them safe.</p>
+            </div>
+
+            <div class="faq-item">
+                <h3>What are the pricing plans?</h3>
+                <p>
+                    • <strong>Individual / Small Team</strong>: $5.99/mo – 1,000 encrypt requests<br>
+                    • <strong>Business</strong>: $12.99/mo – 15,000 encrypt requests<br>
+                    • <strong>Enterprise</strong>: $49.99/mo – 100,000 encrypt requests<br>
+                    Custom tiers available — <a class="linker" href="mailto:resurgencelabsofficial@gmail.com">contact us</a>.
+                </p>
+            </div>
+
+            <div class="faq-item">
+                <h3>Where can I sign up?</h3>
+                <p>Start with the free trial on the <a class="linker" href="plans.html">Plans</a> page. For custom needs, reach out to <a class="linker" href="mailto:resurgencelabsofficial@gmail.com">resurgencelabsofficial@gmail.com</a>.</p>
+            </div>
         </div>
     </section>
 
     <footer>
-        <p>Quantumsure Inc &copy; 2025</p>
+        <p>© 2026 QuantumSure Inc. All rights reserved.</p>
     </footer>
 
     <script>
-        document.getElementById("mobile-menu").addEventListener("click", function () {
+        document.getElementById("mobile-menu").addEventListener("click", () => {
             document.querySelector(".nav-center").classList.toggle("nav-active");
         });
     </script>
-    <script src="main.js"></script>
 </body>
 </html>

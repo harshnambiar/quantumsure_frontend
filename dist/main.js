@@ -6818,12 +6818,12 @@ async function getMyPublicKey() {
   return public_key;
 }
 
-async function storePassword(apiKey, site, username, password) {
+async function storePassword(apiKey, site, username, password, secretPhrase) {
   const publicKey = await getMyPublicKey();
   const { encrypted_data } = await quantumResistantEncrypt(password, publicKey);
   const response = await fetch(`${API_BASE_URL}/password/store`, {
     method: 'POST',
-    headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+    headers: { 'api_key': apiKey, 'secret_phrase': secretPhrase, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       data: { site, username, encrypted_text: encrypted_data }
     }),
@@ -6887,10 +6887,10 @@ async function shareWithUsers(apiKey, passwordId, masterPassword, encryptedPriva
   return await shareRes.json();
 }
 
-async function revokeSharedPassword(apiKey, shareId) {
+async function revokeSharedPassword(apiKey, shareId, secretPhrase) {
   const response = await fetch(`${API_BASE_URL}/share/revoke`, {
     method: 'POST',
-    headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+    headers: { 'api_key': apiKey, 'secret_phrase': secretPhrase, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       data: { share_id: shareId }
     }),
@@ -6900,10 +6900,10 @@ async function revokeSharedPassword(apiKey, shareId) {
 }
 
 
-async function deleteSharedPassword(apiKey, shareId) {
+async function deleteSharedPassword(apiKey, shareId, secretPhrase) {
   const response = await fetch(`${API_BASE_URL}/share/delete`, {
     method: 'POST',
-    headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+    headers: { 'api_key': apiKey, 'secret_phrase': secretPhrase, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       data: { share_id: shareId }
     }),
@@ -6940,50 +6940,50 @@ async function useSharedPassword(apiKey, shareId, masterPassword, encryptedPriva
 
 }
 
-async function createShareGroup1(apiKey, groupName){
+async function createShareGroup1(apiKey, groupName, secretPhrase){
     const response = await fetch(`${API_BASE_URL}/sharegroup/create`, {
         method: 'POST',
-        headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+        headers: { 'api_key': apiKey, 'secret_phrase': secretPhrase, 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: { name: groupName } }),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
 }
 
-async function addShareGroupMember(apiKey, groupId, memberApi){
+async function addShareGroupMember(apiKey, groupId, memberApi, secretPhrase){
     const response = await fetch(`${API_BASE_URL}/sharegroup/add`, {
         method: 'POST',
-        headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+        headers: { 'api_key': apiKey, 'secret_phrase': secretPhrase, 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: { group_id: groupId, member_api_keys: [memberApi] } }),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
 }
 
-async function removeShareGroupMember(apiKey, groupId, memberApi){
+async function removeShareGroupMember(apiKey, groupId, memberApi, secretPhrase){
     const response = await fetch(`${API_BASE_URL}/sharegroup/remove`, {
         method: 'POST',
-        headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+        headers: { 'api_key': apiKey, 'secret_phrase': secretPhrase, 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: { group_id: groupId, member_api_keys: [memberApi] } }),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
 }
 
-async function revokeShareGroup1(apiKey, groupId){
+async function revokeShareGroup1(apiKey, groupId, secretPhrase){
     const response = await fetch(`${API_BASE_URL}/sharegroup/revoke`, {
         method: 'POST',
-        headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+        headers: { 'api_key': apiKey, 'secret_phrase': secretPhrase, 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: { group_id: groupId } }),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
 }
 
-async function deleteShareGroup1(apiKey, groupId){
+async function deleteShareGroup1(apiKey, groupId, secretPhrase){
     const response = await fetch(`${API_BASE_URL}/sharegroup/delete`, {
         method: 'POST',
-        headers: { 'api_key': apiKey, 'Content-Type': 'application/json' },
+        headers: { 'api_key': apiKey, 'secret_phrase': secretPhrase, 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: { group_id: groupId } }),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -7022,10 +7022,11 @@ window.storePassword = async () => {
   const site = document.getElementById('site').value;
   const username = document.getElementById('username').value;
   const password = document.getElementById('password').value;
+  const secret = document.getElementById('secret-phrase0').value;
   if (!site || !username || !password) return alert('Fill all fields.');
 
   try {
-    const r = await storePassword(apiKey, site, username, password);
+    const r = await storePassword(apiKey, site, username, password, secret);
     document.getElementById('output').innerText = `Stored! ID: ${r.password_id}`;
   } catch (e) {
     document.getElementById('output').innerText = `Error: ${e.message}`;
@@ -7140,11 +7141,12 @@ window.useShared = async () => {
 
 window.revokeShared = async () => {
   const shareId = document.getElementById('share-id2').value;
+  const secret = document.getElementById('secret-phrase2').value;
   const apiKey = localStorage.getItem("apiKey");
   if (!shareId) return alert('Fill all fields.');
 
   try {
-    const r = await revokeSharedPassword(apiKey, shareId);
+    const r = await revokeSharedPassword(apiKey, shareId, secret);
     document.getElementById('output').innerText = `Successfully Revoked Shared Token.`;
   } catch (e) {
     document.getElementById('output').innerText = `Error: ${e.message}`;
@@ -7153,11 +7155,12 @@ window.revokeShared = async () => {
 
 window.deleteShared = async () => {
   const shareId = document.getElementById('share-id3').value;
+  const secret = document.getElementById('secret-phrase3').value;
   const apiKey = localStorage.getItem("apiKey");
   if (!shareId) return alert('Fill all fields.');
 
   try {
-    const r = await deleteSharedPassword(apiKey, shareId);
+    const r = await deleteSharedPassword(apiKey, shareId, secret);
     document.getElementById('output').innerText = `Successfully Deleted Shared Token.`;
   } catch (e) {
     document.getElementById('output').innerText = `Error: ${e.message}`;
@@ -7166,11 +7169,12 @@ window.deleteShared = async () => {
 
 window.createShareGroup = async () => {
   const groupName = document.getElementById('group-name').value;
+  const secret = document.getElementById('secret-phrase4').value;
   const apiKey = localStorage.getItem("apiKey");
   if (!groupName) return alert('Fill all fields.');
 
   try {
-    const r = await createShareGroup1(apiKey, groupName);
+    const r = await createShareGroup1(apiKey, groupName, secret);
     console.log(r);
     document.getElementById('output').innerText = `Share Group Created. Group id: `.concat(r.group_id);
   } catch (e) {
@@ -7181,11 +7185,12 @@ window.createShareGroup = async () => {
 window.addGroupMember = async () => {
   const groupId = document.getElementById('add-group-id').value;
   const memberApi = document.getElementById('add-member-key').value;
+  const secret = document.getElementById('secret-phrase5').value;
   const apiKey = localStorage.getItem("apiKey");
   if (!groupId || !memberApi) return alert('Fill all fields.');
 
   try {
-    const r = await addShareGroupMember(apiKey, groupId, memberApi);
+    const r = await addShareGroupMember(apiKey, groupId, memberApi, secret);
     document.getElementById('output').innerText = `Added Member.`;
   } catch (e) {
     document.getElementById('output').innerText = `Error: ${e.message}`;
@@ -7195,11 +7200,12 @@ window.addGroupMember = async () => {
 window.removeGroupMember = async () => {
   const groupId = document.getElementById('remove-group-id').value;
   const memberApi = document.getElementById('remove-member-key').value;
+  const secret = document.getElementById('secret-phrase6').value;
   const apiKey = localStorage.getItem("apiKey");
   if (!groupId || !memberApi) return alert('Fill all fields.');
 
   try {
-    const r = await removeShareGroupMember(apiKey, groupId, memberApi);
+    const r = await removeShareGroupMember(apiKey, groupId, memberApi, secret);
     document.getElementById('output').innerText = `Removed Member.`;
   } catch (e) {
     document.getElementById('output').innerText = `Error: ${e.message}`;
@@ -7208,11 +7214,12 @@ window.removeGroupMember = async () => {
 
 window.revokeShareGroup = async () => {
   const groupId = document.getElementById('revoke-group-id').value;
+  const secret = document.getElementById('secret-phrase7').value;
   const apiKey = localStorage.getItem("apiKey");
   if (!groupId) return alert('Fill all fields.');
 
   try {
-    const r = await revokeShareGroup1(apiKey, groupId);
+    const r = await revokeShareGroup1(apiKey, groupId, secret);
     document.getElementById('output').innerText = `Share Group Revoked.`;
   } catch (e) {
     document.getElementById('output').innerText = `Error: ${e.message}`;
@@ -7221,11 +7228,12 @@ window.revokeShareGroup = async () => {
 
 window.deleteShareGroup = async () => {
   const groupId = document.getElementById('delete-group-id').value;
+  const secret = document.getElementById('secret-phrase8').value;
   const apiKey = localStorage.getItem("apiKey");
   if (!groupId) return alert('Fill all fields.');
 
   try {
-    const r = await deleteShareGroup1(apiKey, groupId);
+    const r = await deleteShareGroup1(apiKey, groupId, secret);
     document.getElementById('output').innerText = `Share Group Deleted.`;
   } catch (e) {
     document.getElementById('output').innerText = `Error: ${e.message}`;
@@ -7432,6 +7440,14 @@ async function expandGuide(k){
       document.getElementById('ee6').style.display = document.getElementById('ee6').style.display !== 'block' ? 'block': 'none';
       break;
     }
+    case 10: {
+      document.getElementById('ff1').style.display = document.getElementById('ff1').style.display !== 'block' ? 'block': 'none';
+      break;
+    }
+    case 11: {
+      document.getElementById('ff2').style.display = document.getElementById('ff2').style.display !== 'block' ? 'block': 'none';
+      break;
+    }
     default: {}
   }
 }
@@ -7512,6 +7528,17 @@ window.clearAccount = clearAccount;
 
 // === Files ===
 
+
+// Concat helper
+  function src_concatBytes(...arrays) {
+    const total = arrays.reduce((acc, a) => acc + a.length, 0);
+    const result = new Uint8Array(total);
+    let offset = 0;
+    for (const arr of arrays) result.set(arr, offset), offset += arr.length;
+    return result;
+  }
+
+
 async function encryptFile() {
     const fileInput = document.getElementById('encrypt-file');
     const file = fileInput.files?.[0];
@@ -7530,17 +7557,21 @@ async function encryptFile() {
     statusDiv.style.color = 'blue';
 
     try {
-      const publicKey = getPublicKey();  // Uint8Array
+      const publicKeyEncoded = await getMyPublicKey();
+      const publicKey = new Uint8Array(decode(publicKeyEncoded))// Uint8Array
 
       // Read file
       const fileBytes = new Uint8Array(await file.arrayBuffer());
 
+      const kem = new MlKem1024();
       // ML-KEM-1024 encapsulate → get ciphertext + shared secret (our symmetric key)
-      const { ciphertext: kemCiphertext, sharedSecret: fileKey } =
-        await MlKem1024.encap(publicKey);
-
+      const ec =
+        await kem.encap(publicKey);
+      const kemCiphertext = ec[0];
+      const fileKey = ec[1];
       // Encrypt file content with XChaCha20-Poly1305
       const nonce = src_randomBytes(24);
+
       const encryptedFile = xchacha20poly1305(fileKey, nonce).encrypt(fileBytes);
 
       // Bundle: version (2B) | kemLen (2B) | kemCiphertext | nonce (24B) | encryptedFile
@@ -7550,13 +7581,14 @@ async function encryptFile() {
         kemCiphertext.length & 0xff
       ]);
 
-      const bundle = concatBytes(
+      const bundle = src_concatBytes(
         version,
         kemLenBytes,
         kemCiphertext,
         nonce,
         encryptedFile
       );
+
 
       // Download
       const blob = new Blob([bundle], { type: 'application/octet-stream' });
@@ -7579,6 +7611,179 @@ async function encryptFile() {
 }
 window.encryptFile = encryptFile;
 
+
+async function encryptFileForSomeone() {
+    const fileInput = document.getElementById('encrypt-file-someone');
+    const file = fileInput.files?.[0];
+    if (!file) {
+      alert('Please select a file first.');
+      return;
+    }
+
+    const targetApiKey = document.getElementById('file-api').value;
+
+    if (targetApiKey == "" || !targetApiKey || targetApiKey == null){
+      alert('API Key cannot be blank');
+      return;
+    }
+
+    let statusDiv = document.getElementById('encrypt-someone-status');
+    if (!statusDiv) {
+      statusDiv = document.createElement('div');
+      statusDiv.id = 'encrypt-someone-status';
+      fileInput.parentElement.appendChild(statusDiv);
+    }
+    statusDiv.textContent = 'Encrypting...';
+    statusDiv.style.color = 'blue';
+
+    try {
+      const publicKeyEncoded = await getPublicKey(targetApiKey);
+      const publicKey = new Uint8Array(decode(publicKeyEncoded))// Uint8Array
+
+      // Read file
+      const fileBytes = new Uint8Array(await file.arrayBuffer());
+
+      const kem = new MlKem1024();
+      // ML-KEM-1024 encapsulate → get ciphertext + shared secret (our symmetric key)
+      const ec =
+        await kem.encap(publicKey);
+      const kemCiphertext = ec[0];
+      const fileKey = ec[1];
+      // Encrypt file content with XChaCha20-Poly1305
+      const nonce = src_randomBytes(24);
+
+      const encryptedFile = xchacha20poly1305(fileKey, nonce).encrypt(fileBytes);
+
+      // Bundle: version (2B) | kemLen (2B) | kemCiphertext | nonce (24B) | encryptedFile
+      const version = new Uint8Array([1, 0]);
+      const kemLenBytes = new Uint8Array([
+        (kemCiphertext.length >> 8) & 0xff,
+        kemCiphertext.length & 0xff
+      ]);
+
+      const bundle = src_concatBytes(
+        version,
+        kemLenBytes,
+        kemCiphertext,
+        nonce,
+        encryptedFile
+      );
+
+
+      // Download
+      const blob = new Blob([bundle], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name + '_'.concat(targetApiKey) + '.qsecure';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      statusDiv.textContent = 'Encryption complete — file downloaded as .qsecure';
+      statusDiv.style.color = 'green';
+    } catch (err) {
+      console.error(err);
+      statusDiv.textContent = 'Encryption failed: ' + (err.message || 'Unknown error');
+      statusDiv.style.color = 'red';
+    }
+}
+window.encryptFileForSomeone = encryptFileForSomeone;
+
+
+async function decryptFile() {
+    const fileInput = document.getElementById('decrypt-file');
+    const mp = document.getElementById('file-mp').value;
+
+    const file = fileInput.files?.[0];
+    if (!file) {
+        alert('Please select a .qsecure file first.');
+        return;
+    }
+
+    let statusDiv = document.getElementById('decrypt-status');
+    if (!statusDiv) {
+        statusDiv = document.createElement('div');
+        statusDiv.id = 'decrypt-status';
+        fileInput.parentElement.appendChild(statusDiv);
+    }
+    statusDiv.textContent = 'Decrypting...';
+    statusDiv.style.color = 'blue';
+
+    try {
+        // We need the private key to decapsulate
+        const privateKeyEncoded = localStorage.getItem('encryptedPrivateKey');
+        if (!privateKeyEncoded || privateKeyEncoded == "" || privateKeyEncoded == null){
+          alert('You are not logged in!');
+          return;
+        }
+
+        const privateKeyB64 = await decryptPrivateKey(privateKeyEncoded, mp);
+
+        const privateKey = new Uint8Array(decode(privateKeyB64)); // Uint8Array
+
+        // Read the encrypted file
+        const bundle = new Uint8Array(await file.arrayBuffer());
+
+        // Parse the structure:
+        // version (2 bytes) | kemLen (2 bytes) | kemCiphertext | nonce (24 bytes) | encrypted data
+        if (bundle.length < 2 + 2 + 24) {
+            throw new Error("File is too short to be valid");
+        }
+
+        const version = bundle.slice(0, 2);
+        if (version[0] !== 1 || version[1] !== 0) {
+            throw new Error(`Unsupported file version: ${version[0]}.${version[1]}`);
+        }
+
+        const kemLen = (bundle[2] << 8) | bundle[3];
+        if (kemLen < 1568 || kemLen > 2000) { // ML-KEM-1024 ciphertext ≈ 1568 bytes
+            throw new Error("Invalid KEM ciphertext length");
+        }
+
+        const offset = 4;
+        const kemCiphertext = bundle.slice(offset, offset + kemLen);
+        const nonce = bundle.slice(offset + kemLen, offset + kemLen + 24);
+        const encryptedFile = bundle.slice(offset + kemLen + 24);
+
+        if (encryptedFile.length === 0) {
+            throw new Error("No encrypted data found");
+        }
+
+        // Decapsulate → recover the file key (shared secret)
+        const kem = new MlKem1024();
+        const fileKey = await kem.decap(kemCiphertext, privateKey);
+
+        // Decrypt the file content
+        const decryptedBytes = xchacha20poly1305(fileKey, nonce).decrypt(encryptedFile);
+
+        // Download decrypted file (original name = filename without .qsecure)
+        let originalName = file.name;
+        if (originalName.toLowerCase().endsWith('.qsecure')) {
+            originalName = originalName.slice(0, -8);
+        }
+
+        const blob = new Blob([decryptedBytes], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = originalName || 'decrypted_file';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        statusDiv.textContent = 'Decryption complete — file downloaded';
+        statusDiv.style.color = 'green';
+    } catch (err) {
+        console.error(err);
+        statusDiv.textContent = 'Decryption failed: ' + (err.message || 'Unknown error');
+        statusDiv.style.color = 'red';
+    }
+}
+
+window.decryptFile = decryptFile;
 
 })();
 
