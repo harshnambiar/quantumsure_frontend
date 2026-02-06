@@ -31,28 +31,29 @@
 
     <div id="user-switcher">
         <strong>Current User:</strong> <span id="current-user">None</span>
-        <button onclick="switchUser()">Switch</button>
-        <button onclick="loginUser()">Add Account</button>
-        <button onclick="logoutUser()">Logout</button>
-        <div class="dummy"></div>
+        <div>
+          <button onclick="switchUser()">Switch Account</button>
+          <button onclick="loginUser()">Import Account</button>
+          <button onclick="logoutUser()">Logout Account</button>
 
-        <div class="flow-selector">
-            <button class="flow-menu-btn" onclick="toggleFlowMenu(event)">
-                Menu ↓
-            </button>
-            <div class="flow-dropdown" id="flow-dropdown">
-                <a href="#" data-flow="create" onclick="showFlow(1);">Create Account</a>
-                <a href="#" data-flow="store" onclick="showFlow(2);">Store Password</a>
-                <a href="#" data-flow="vault" onclick="showFlow(3);">Vault</a>
-                <a href="#" data-flow="retrieve" onclick="showFlow(4);">Retrieve Password</a>
-                <a href="#" data-flow="share" onclick="showFlow(5);">Share with Team</a>
-                <a href="#" data-flow="use-shared" onclick="showFlow(6);">Use Shared Password</a>
-                <a href="#" data-flow="groups" onclick="showFlow(7);">Share Groups</a>
-                <a href="#" data-flow="efiles" onclick="showFlow(8);">Encrypt File</a>
-                <a href="#" data-flow="dfiles" onclick="showFlow(9);">Decrypt File</a>
-                <a href="#" data-flow="export" onclick="showFlow(10);">Export Credentials</a>
-                <a href="#" data-flow="clear" onclick="showFlow(11);">Clear Account Data</a>
-            </div>
+          <div class="flow-selector">
+              <button class="flow-menu-btn" onclick="toggleFlowMenu(event)">
+                  Menu ↓
+              </button>
+              <div class="flow-dropdown" id="flow-dropdown">
+                  <a href="#" data-flow="create" onclick="showFlow(1);">Create Account</a>
+                  <a href="#" data-flow="store" onclick="showFlow(2);">Store Password</a>
+                  <a href="#" data-flow="vault" onclick="showFlow(3);">Vault</a>
+                  <a href="#" data-flow="retrieve" onclick="showFlow(4);">Retrieve Password</a>
+                  <a href="#" data-flow="share" onclick="showFlow(5);">Share with Team</a>
+                  <a href="#" data-flow="use-shared" onclick="showFlow(6);">Use Shared Password</a>
+                  <a href="#" data-flow="groups" onclick="showFlow(7);">Share Groups</a>
+                  <a href="#" data-flow="efiles" onclick="showFlow(8);">Encrypt File</a>
+                  <a href="#" data-flow="dfiles" onclick="showFlow(9);">Decrypt File</a>
+                  <a href="#" data-flow="export" onclick="showFlow(10);">Export Credentials</a>
+                  <a href="#" data-flow="clear" onclick="showFlow(11);">Clear Account Data</a>
+              </div>
+          </div>
         </div>
     </div>
 
