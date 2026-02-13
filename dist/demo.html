@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>QuantumSure – Actions</title>
+    <link rel="shortcut icon" href="img/logo.png" />
+    <link rel="stylesheet" href="main.css" />
+</head>
+<body onload="loadplan();">
+
+    <header>
+        <nav>
+            <div class="logo">QuantumSure</div>
+            <div class="menu-toggle" id="mobile-menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <ul class="nav-center">
+                <li><a href="./">Home</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="docs.html">Docs</a></li>
+                <li><a href="faqs.html">FAQ</a></li>
+                <li><a href="plans.html" class="btn">Get Started</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div style="height: 80px;"></div>
+
+    <div id="user-switcher">
+        <strong>Current User:</strong> <span id="current-user">None</span>
+        <div>
+          <button onclick="switchUser()">Switch Account</button>
+          <button onclick="loginUser()">Import Account</button>
+          <button onclick="logoutUser()">Logout Account</button>
+
+          <div class="flow-selector">
+              <button class="flow-menu-btn" onclick="toggleFlowMenu(event)">
+                  Menu ↓
+              </button>
+              <div class="flow-dropdown" id="flow-dropdown">
+                  <a href="#" data-flow="create" onclick="showFlow(1);">Create Account</a>
+                  <a href="#" data-flow="store" onclick="showFlow(2);">Store Password</a>
+                  <a href="#" data-flow="vault" onclick="showFlow(3);">Vault</a>
+                  <a href="#" data-flow="retrieve" onclick="showFlow(4);">Retrieve Password</a>
+                  <a href="#" data-flow="share" onclick="showFlow(5);">Share with Team</a>
+                  <a href="#" data-flow="use-shared" onclick="showFlow(6);">Use Shared Password</a>
+                  <a href="#" data-flow="groups" onclick="showFlow(7);">Share Groups</a>
+                  <a href="#" data-flow="efiles" onclick="showFlow(8);">Encrypt File</a>
+                  <a href="#" data-flow="dfiles" onclick="showFlow(9);">Decrypt File</a>
+                  <a href="#" data-flow="export" onclick="showFlow(10);">Export Credentials</a>
+                  <a href="#" data-flow="clear" onclick="showFlow(11);">Clear Account Data</a>
+              </div>
+          </div>
+        </div>
+    </div>
+
+    <section class="content-wrapper" id="createflow">
+    <section class="content2">
+      <h2>Create Account</h2>
+      <input type="password" id="create-master-password" placeholder="Master Password">
+      <input type="text" id="secret-phrase" placeholder="Secret Recovery Phrase">
+      <button onclick="createAccount()">Create Account</button>
+    </section>
+    <section class="content2">
+      <h3>Guide</h3>
+      <p>Choose any master password and secret phrase and write them down. Please note that QuantumSure CANNOT recover your master password if you lose it. Please remember to store your API Key after creating an account. You will need your API Key and Secret Phrase to login to your account from another machine. The generated key can be viewed at the bottom of the page after creation.</p>
+    </section>
+  </section>
+
+  <section class="content-wrapper" id="storeflow">
+    <section class='content2'>
+      <h2>Store Password</h2>
+      <input type="text" id="site" placeholder="Site">
+      <input type="text" id="username" placeholder="Username">
+      <input type="password" id="password" placeholder="Password">
+      <input type="password" id="secret-phrase0" placeholder="Your Secret Phrase">
+      <button onclick="generatePassword()">Generate</button>
+      <button onclick="storePassword()">Store</button>
+    </section>
+    <section class="content2">
+      <h3>Guide</h3>
+      <p>Choose the password you want QuantumSure to securely store for you. The generated password ID can be viewed at the bottom of the page after the operation completes.</p>
+    </section>
+  </section>
+
+  <section class="content-wrapper" id="vaultflow">
+    <section class="content2">
+      <h2>Vault</h2>
+      <button onclick="listPasswords()">List Passwords</button>
+      <ul id="password-list"></ul>
+    </section>
+    <section class="content2">
+      <h3>Guide</h3>
+      <p>List all the Password IDs that QuantumSure currently stores for you. Please note that you still need to use your Master Password to decrypt these passwords in the Retrieve section.</p>
+    </section>
+  </section>
+
+  <section class="content-wrapper" id="retrieveflow">
+    <section class="content2">
+      <h2>Retrieve</h2>
+      <input type="text" id="password-id" placeholder="Password ID">
+      <input type="password" id="retrieve-master-password" placeholder="Master Password">
+      <button onclick="getPassword()">Get</button>
+    </section>
+    <section class="content2">
+      <h3>Guide</h3>
+      <p>Choose the Password ID for your password that you want to safely decrypt and access on QuantumSure. Input the Master Password. The password will be viewable at the bottom section of the page if the operation is successful.</p>
+    </section>
+  </section>
+
+  <section class="content-wrapper" id="shareflow">
+    <section class="content2">
+      <div class="faq-header">
+            <h2 class="faq-title">Share with Team</h2>
+            <span class="faq-toggle" onclick="expandGuide(1);">?</span>
+      </div>
+      <input type="text" id="share-password-id" placeholder="Password ID">
+      <input type="text" id="recipient-api-keys" placeholder="Recipient API Keys (comma-separated)">
+      <input type="text" id="share-type" placeholder="password or ouath_token">
+      <input type="password" id="share-master-password" placeholder="Master Password">
+      <button onclick="sharePassword()">Share</button>
+    </section>
+
+
+
+    <section class="content3" id="dd1">
+      <h3>Guide</h3>
+      <p>Choose the Password ID for the password that you want to securely share with your team. Input the list of API Keys separated by commas for your team members. The share type can be either "password" or "oauth_token". Input the Master Password. The generated share tokens can be viewed at the bottom of the page after the successful completetion of the operation.</p>
+
+   </section>
+
+    <section class="content2">
+    <div class="faq-header">
+            <h2 class="faq-title">Revoke Shared Password</h2>
+            <span class="faq-toggle" onclick="expandGuide(2);">?</span>
+      </div>
+
+      <input type="text" id="share-id2" placeholder="Share ID">
+      <input type="password" id="secret-phrase2" placeholder="Your Secret Phrase">
+      <button onclick="revokeShared()">Revoke</button>
+    </section>
+
+    <section class="content3" id="dd2">
+      <h3>Guide</h3>
+      <p>Revoke the access privilege for one of the Share Tokens you created above. The result of the operation can be viewed at the bottom of the page.</p>
+    </section>
+
+    <section class="content2">
+
+      <div class="faq-header">
+            <h2 class="faq-title">Delete Shared Password</h2>
+            <span class="faq-toggle" onclick="expandGuide(3);">?</span>
+      </div>
+      <input type="text" id="share-id3" placeholder="Share ID">
+      <input type="password" id="secret-phrase3" placeholder="Your Secret Phrase">
+
+      <button onclick="deleteShared()">Delete</button>
+    </section>
+    <section class="content3" id="dd3">
+      <h3>Guide</h3>
+      <p>Permanently delete one of the Share Tokens you created above. The result of the operation can be viewed at the bottom of the page.</p>
+    </section>
+  </section>
+
+  <section class="content-wrapper" id="usesharedflow">
+     <section class="content2">
+      <h2>Use Shared Password</h2>
+      <input type="text" id="share-id" placeholder="Share ID">
+      <input type="password" id="access-master-password" placeholder="Master Password">
+      <button onclick="useShared()">Use</button>
+    </section>
+    <section class="content2">
+      <h3>Guide</h3>
+      <p>Access a password through the Share Token your team has created for you. Input the Share ID for the password you want to access and input YOUR Master Password. If the result of the operation is a success, the password can be viewed at the bottom of the page.</p>
+    </section>
+  </section>
+
+  <section class="content-wrapper" id="groupflow">
+  <!-- ==== CREATE GROUP ==== -->
+  <section class="content2">
+    <div class="faq-header">
+            <h2 class="faq-title">Create Share Group</h2>
+            <span class="faq-toggle" onclick="expandGuide(4);">?</span>
+      </div>
+    <input id="group-name" placeholder="Group name (e.g. Dev Team)" />
+    <input type="password" id="secret-phrase4" placeholder="Your Secret Phrase">
+    <button onclick="createShareGroup()">Create</button>
+  </section>
+
+  <section class="content3" id="ee1">
+      <h3>Guide</h3>
+      <p>Create a Share Group to share passwords and access tokens with your team. The result of the operation can be viewed at the bottom of the page, and a Group ID is generated on success.</p>
+  </section>
+
+  <!-- ==== ADD MEMBER ==== -->
+  <section class="content2">
+    <div class="faq-header">
+            <h2 class="faq-title">Add Member to Group</h2>
+            <span class="faq-toggle" onclick="expandGuide(5);">?</span>
+      </div>
+    <input id="add-group-id" placeholder="Group ID" />
+    <input id="add-member-key" placeholder="Recipient API key" />
+    <input type="password" id="secret-phrase5" placeholder="Your Secret Phrase">
+    <button onclick="addGroupMember()">Add</button>
+    </section>
+    <section class="content3" id="ee2">
+      <h3>Guide</h3>
+      <p>Add a member to your Share Group. Requires the Group ID and the API Key of your team member. The result of the operation can be viewed at the bottom of the page.</p>
+    </section>
+
+  <!-- ==== REMOVE MEMBER ==== -->
+  <section class="content2">
+    <div class="faq-header">
+            <h2 class="faq-title">Remove Member from Group</h2>
+            <span class="faq-toggle" onclick="expandGuide(6);">?</span>
+      </div>
+    <input id="remove-group-id" placeholder="Group ID" />
+    <input id="remove-member-key" placeholder="Recipient API key" />
+    <input type="password" id="secret-phrase6" placeholder="Your Secret Phrase">
+    <button onclick="removeGroupMember()">Remove</button>
+  </section>
+  <section class="content3" id="ee3">
+      <h3>Guide</h3>
+      <p>Remove a member from the Share Group you created above. Requires the Group ID and the API Key of the intended member. The result of the operation can be viewed at the bottom of the page.</p>
+    </section>
+
+  <!-- ==== REVOKE GROUP ==== -->
+  <section class="content2">
+    <div class="faq-header">
+            <h2 class="faq-title">Revoke Share Group</h2>
+            <span class="faq-toggle" onclick="expandGuide(7);">?</span>
+      </div>
+    <input id="revoke-group-id" placeholder="Group ID" />
+     <input type="password" id="secret-phrase7" placeholder="Your Secret Phrase">
+    <button onclick="revokeShareGroup()">Delete</button>
+
+  </section>
+  <section class="content3" id="ee4">
+      <h3>Guide</h3>
+      <p>Revoke the access privilege for every member of the Share Group you created above. The result of the operation can be viewed at the bottom of the page.</p>
+    </section>
+
+  <!-- ==== DELETE GROUP ==== -->
+  <section class="content2">
+    <div class="faq-header">
+            <h2 class="faq-title">Delete Share Group</h2>
+            <span class="faq-toggle" onclick="expandGuide(8);">?</span>
+      </div>
+    <input id="delete-group-id" placeholder="Group ID" />
+     <input type="password" id="secret-phrase8" placeholder="Your Secret Phrase">
+    <button onclick="deleteShareGroup()">Delete</button>
+  </section>
+  <section class="content3" id="ee5">
+      <h3>Guide</h3>
+      <p>Permanently delete the Share Group you created above. The result of the operation can be viewed at the bottom of the page.</p>
+    </section>
+
+
+  <!-- ==== SHARE WITH GROUP ==== -->
+  <section class="content2">
+    <div class="faq-header">
+            <h2 class="faq-title">Share with Group</h2>
+            <span class="faq-toggle" onclick="expandGuide(9);">?</span>
+      </div>
+    <input id="share-group-id" placeholder="Group ID" />
+    <input id="share-pwd-id" placeholder="Password ID" />
+    <input id="share-pwd-type" placeholder="password or oauth_token" />
+    <input id="share-mp" placeholder="Master Password" type="password" />
+    <button onclick="shareWithGroup()">Share with Group</button>
+  </section>
+  <section class="content3" id="ee6">
+      <h3>Guide</h3>
+      <p>Share a password or access token with all members of your Share Group. Requires the Group ID, the Password ID obtained from the Vault section, the type of token (either password or oauth_token), and your Master Password. The result of the operation can be viewed at the bottom of the page. On success, it will generate a Share ID for each member of the group.</p>
+    </section>
+</section>
+
+<section class="content-wrapper" id="efileflow">
+  <section class="content2">
+    <div class="faq-header">
+            <h2 class="faq-title">Encrypt File for Me</h2>
+            <span class="faq-toggle" onclick="expandGuide(10);">?</span>
+      </div>
+    <input type="file" id="encrypt-file" />
+    <button onclick="encryptFile()">Encrypt</button>
+  </section>
+  <section class="content3" id="ff1">
+      <h3>Guide</h3>
+      <p>This action will create an encrypted and quantum-secure equivalent file for your inputted file. It will then be stored on your device. Please keep it safe as it cannot be recovered by us since QuantumSure is NOT storing a copy of it.</p>
+  </section>
+
+
+    <section class="content2">
+    <div class="faq-header">
+            <h2 class="faq-title">Encrypt File for Someone Else</h2>
+            <span class="faq-toggle" onclick="expandGuide(11);">?</span>
+      </div>
+    <input type="file" id="encrypt-file-someone" />
+    <input id="file-api" placeholder="That Person's API Key" />
+    <button onclick="encryptFileForSomeone()">Encrypt</button>
+  </section>
+  <section class="content3" id="ff2">
+      <h3>Guide</h3>
+      <p>This action will create an encrypted and quantum-secure equivalent file for your inputted file for the person whose API Key you are entering. It will then be stored on your device. You can then send it to them securely, and it can only be decrypted by them. Please keep it safe as it cannot be recovered by us since QuantumSure is NOT storing a copy of it.</p>
+  </section>
+</section>
+
+<section class="content-wrapper" id="dfileflow">
+    <section class="content2">
+      <h2>Decrypt File</h2>
+      <input type="file" id="decrypt-file" accept=".qsecure"/>
+      <input id="file-mp" placeholder="Master Password" type="password" />
+      <button onclick="decryptFile()">Decrypt</button>
+    </section>
+    <section class="content2">
+      <h3>Guide</h3>
+      <p>This action will decrypt the quantum secure file that you created in the Encrypt File section and provide you with the decrypted version to download. It will then be stored on your device. Please keep it safe as it cannot be recovered by us since QuantumSure is NOT storing a copy of it. If the contents of the file are important or confidential, it is highly recommended to store them safely in external storage.</p>
+    </section>
+  </section>
+
+
+<section class="content-wrapper" id="exportflow">
+    <section class="content2">
+      <h2>Export Credentials</h2>
+
+      <button onclick="exportAccount()">Export Credentials</button>
+    </section>
+    <section class="content2">
+      <h3>Guide</h3>
+      <p>This action will create a txt file with your API Key and Encrypted Private Key, and download it on your current device. The file is being safely generated on your end, and QuantumSure does NOT know of its contents. Please keep the file safe from unauthorized view, or even better, create a hard copy of its contents and then delete the file.</p>
+    </section>
+  </section>
+
+  <section class="content-wrapper" id="clearflow">
+    <section class="content2">
+      <h2>Clear Account Data</h2>
+
+      <button onclick="clearAccount()">Clear Data</button>
+    </section>
+    <section class="content2">
+      <h3>Guide</h3>
+      <p>This action will delete the API Key, Encrypted Private Key, and any other data stored in your browser as cache. Please note that this doesn't delete your QuantumSure account. It is recommended to use this feature on Public Computers or machines you share with other users.</p>
+    </section>
+  </section>
+
+    <div id="output" class="op"></div>
+
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeForm();">×</span>
+            <h2>Enter Key Details</h2>
+            <form id="keyForm">
+                <label for="apiKey">API Key</label>
+                <input type="text" id="apiKey" name="apiKey" required />
+
+                <label for="encryptedKey">Encrypted Key</label>
+                <input type="password" id="encryptedKey" name="encryptedKey" required />
+
+                <label for="alias">Alias</label>
+                <input type="text" id="alias" name="alias" required />
+
+                <button type="button" onclick="addAccount();">Save</button>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2026 QuantumSure Inc. All rights reserved.</p>
+    </footer>
+
+    <script>
+        document.getElementById("mobile-menu").addEventListener("click", () => {
+            document.querySelector(".nav-center").classList.toggle("nav-active");
+        });
+    </script>
+    <script src="main.js"></script>
+</body>
+</html>
