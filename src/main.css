@@ -157,13 +157,14 @@ nav ul li a.active {
     align-items: center;
     text-align: center;
     padding: 0 6% 4rem;
+    padding-top: 7rem;
     position: relative;
     background: linear-gradient(135deg, #0a0a1a 0%, #0f0f2a 100%);
 }
 
 .hero h1 {
     font-family: 'Orbitron', monospace;
-    font-size: clamp(2.8rem, 7vw, 5rem);
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
     margin-bottom: 1.5rem;
     background: linear-gradient(90deg, var(--accent), #00aaff, var(--accent));
     -webkit-background-clip: text;
@@ -388,8 +389,10 @@ footer {
 
 /* Responsive tweaks */
 @media (max-width: 768px) {
+    .hero { padding-top: 5rem; }
     .hero h1 { font-size: clamp(2.2rem, 8vw, 3.8rem); }
     .hero p { font-size: 1.1rem; }
     .features { padding: 6rem 5% 4rem; }
+    .features h2 { font-size: 2.5rem; }
     .content-wrapper { padding: 5rem 5% 3rem; }
 }
