@@ -51,7 +51,8 @@
                   <a href="#" data-flow="efiles" onclick="showFlow(8);">Encrypt File</a>
                   <a href="#" data-flow="dfiles" onclick="showFlow(9);">Decrypt File</a>
                   <a href="#" data-flow="export" onclick="showFlow(10);">Export Credentials</a>
-                  <a href="#" data-flow="clear" onclick="showFlow(11);">Clear Account Data</a>
+                  <a href="#" data-flow="backup" onclick="showFlow(11);">Backup Account</a>
+                  <a href="#" data-flow="clear" onclick="showFlow(12);">Clear Account Data</a>
               </div>
           </div>
         </div>
@@ -333,6 +334,20 @@
     </section>
   </section>
 
+  <section class="content-wrapper" id="backupflow">
+    <section class="content2">
+      <h2>Backup Account</h2>
+      <div style="display:flex;"><button onclick="connectOrDisconnect()" style="margin-right: 10px;" id="login-status">Oasis Blockchain Login</button>
+
+        <button onclick="backupAccount()" style="margin-right: 10px;">Backup Account to Blockchain</button>
+      </div>
+    </section>
+    <section class="content2">
+      <h3>Guide</h3>
+      <p>This action will store your encrypted private key on Oasis, a blockchain with encrypted and private transactions. Please note that you still need to remember your Master Password to retrieve all your stored passwords, and this action only stores the encrypted and safe versiob of your private key.</p>
+    </section>
+  </section>
+
   <section class="content-wrapper" id="clearflow">
     <section class="content2">
       <h2>Clear Account Data</h2>
@@ -371,6 +386,7 @@
     </footer>
 
     <script>
+        localStorage.setItem("accqs", "");
         document.getElementById("mobile-menu").addEventListener("click", () => {
             document.querySelector(".nav-center").classList.toggle("nav-active");
         });

@@ -3,6 +3,12 @@ import { encode, decode } from 'base64-arraybuffer';
 import ChaCha20 from 'js-chacha20';
 import { xchacha20poly1305 } from '@noble/ciphers/chacha.js';
 import { Buffer } from 'buffer';
+import detectEthereumProvider from "@metamask/detect-provider";
+import { wrapEthereumProvider } from "@oasisprotocol/sapphire-paratime";
+import { wrapEthersSigner, wrapEthersProvider } from '@oasisprotocol/sapphire-ethers-v6';
+import { BrowserProvider, Contract, ethers } from "ethers";
+import { AEAD, NonceSize } from '@oasisprotocol/deoxysii';
+import Web3 from "web3";
 
 // === CONFIG ===
 const API_BASE_URL = 'https://quantumsure.onrender.com/api'; // Update if needed
@@ -1168,3 +1174,98 @@ async function decryptFile() {
 }
 
 window.decryptFile = decryptFile;
+
+
+// metamask
+
+async function connectOrDisconnect() {
+    const acc_cur = localStorage.getItem("accqs") || "";
+    console.log(acc_cur == "");
+    if (acc_cur != "" && acc_cur != null){
+        localStorage.setItem("accqs","");
+        document.getElementById("login-status").textContent = "Login";
+        return;
+    }
+
+    var chainId = 23295;
+    var cid = '0x5aff';
+    var chain = 'Oasis Sapphire Testnet';
+    var name = 'Oasis Sapphire Testnet';
+    var symbol = 'TEST';
+    var rpc = "https://testnet.sapphire.oasis.io";
+    const provider1 = await detectEthereumProvider();
+    const provider = wrapEthereumProvider(provider1);
+
+
+    if (provider1 && provider1 === (window.ethereum)) {
+        console.log("MetaMask is available!");
+
+        console.log(window.ethereum.networkVersion);
+        if (window.ethereum.networkVersion !== chainId) {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: cid }]
+                });
+                console.log("changed to ".concat(name).concat(" successfully"));
+
+            } catch (err) {
+                console.log(err);
+                // This error code indicates that the chain has not been added to MetaMask
+                if (err.code === 4902) {
+                    console.log("please add ".concat(name).concat(" as a network"));
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [
+                                {
+                                    chainName: chain,
+                                    chainId: cid,
+                                    nativeCurrency: { name: name, decimals: 18, symbol: symbol },
+                                    rpcUrls: [rpc]
+                                }
+                            ]
+                        });
+                }
+                else {
+                    console.log(err);
+                }
+            }
+        }
+        await startApp(provider1);
+    } else {
+      console.log(provider1);
+        console.log("Please install MetaMask!")
+    }
+
+
+
+}
+window.connectOrDisconnect = connectOrDisconnect;
+
+
+async function startApp(provider1) {
+  if (provider1 !== (window.ethereum)) {
+    console.error("Do you have multiple wallets installed?")
+  }
+  else {
+    const accounts = await window.ethereum
+    .request({ method: "eth_requestAccounts" })
+    .catch((err) => {
+      if (err.code === 4001) {
+        console.log("Please connect to MetaMask.")
+      } else {
+        console.error(err)
+      }
+    })
+    console.log("hi");
+  const account = accounts[0];
+  var web3 = new Web3(provider1);
+  const bal = await web3.eth.getBalance(account);
+
+  console.log(bal);
+  console.log(account);
+  localStorage.setItem("accqs",account.toString());
+  document.getElementById("login-status").textContent = (account.toString().slice(0,8)).concat('..(Logout)');
+
+  }
+}
