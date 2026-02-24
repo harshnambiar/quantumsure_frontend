@@ -226,9 +226,20 @@ nav ul li a.active {
     padding: 6rem 6% 4rem;
 }
 
-.content2, .content3 {
+.content2 {
     background: var(--bg-card);
     border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2.5rem;
+    margin: 2rem auto;
+    max-width: 900px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+}
+
+.content3 {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    display: none;
     border-radius: 16px;
     padding: 2.5rem;
     margin: 2rem auto;

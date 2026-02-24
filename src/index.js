@@ -839,6 +839,14 @@ async function expandGuide(k){
       document.getElementById('ff2').style.display = document.getElementById('ff2').style.display !== 'block' ? 'block': 'none';
       break;
     }
+    case 12: {
+      document.getElementById('bb1').style.display = document.getElementById('bb1').style.display !== 'block' ? 'block': 'none';
+      break;
+    }
+    case 13: {
+      document.getElementById('bb2').style.display = document.getElementById('bb2').style.display !== 'block' ? 'block': 'none';
+      break;
+    }
     default: {}
   }
 }
