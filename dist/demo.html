@@ -337,6 +337,10 @@
   <section class="content-wrapper" id="backupflow">
     <section class="content2">
       <h2>Backup Account</h2>
+
+      <input type="password" id="backup-mp" placeholder="Your Master Password">
+      <input type="password" id="backup-sp" placeholder="Your Secret Phrase">
+
       <div style="display:flex;"><button onclick="connectOrDisconnect()" style="margin-right: 10px;" id="login-status">Oasis Blockchain Login</button>
 
         <button onclick="backupAccount()" style="margin-right: 10px;">Backup Account to Blockchain</button>
@@ -345,6 +349,19 @@
     <section class="content2">
       <h3>Guide</h3>
       <p>This action will store your encrypted private key on Oasis, a blockchain with encrypted and private transactions. Please note that you still need to remember your Master Password to retrieve all your stored passwords, and this action only stores the encrypted and safe versiob of your private key.</p>
+    </section>
+
+    <section class="content2">
+      <h2>Import Account</h2>
+
+      <input id="backup-api" placeholder="Your API Key">
+        <div style="display:flex;"><button onclick="connectOrDisconnect()" style="margin-right: 10px;" id="login-status-2">Oasis Blockchain Login</button>
+        <button onclick="backupFetch()" style="margin-right: 10px;">Fetch Backup from Blockchain</button>
+      </div>
+    </section>
+    <section class="content2">
+      <h3>Guide</h3>
+      <p>This action will fetch the encrypted private key corresponding to the entered API Key (if you have backed it up before), and then download the credentials as a text file on to your device. We recommend that you store this file at a safe location, or even better, note it down safely on a piece of paper, and then delete the file.</p>
     </section>
   </section>
 

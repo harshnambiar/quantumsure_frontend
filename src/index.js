@@ -9,6 +9,7 @@ import { wrapEthersSigner, wrapEthersProvider } from '@oasisprotocol/sapphire-et
 import { BrowserProvider, Contract, ethers } from "ethers";
 import { AEAD, NonceSize } from '@oasisprotocol/deoxysii';
 import Web3 from "web3";
+import artifact30 from "./QsureBackup.json";
 
 // === CONFIG ===
 const API_BASE_URL = 'https://quantumsure.onrender.com/api'; // Update if needed
@@ -1184,6 +1185,7 @@ async function connectOrDisconnect() {
     if (acc_cur != "" && acc_cur != null){
         localStorage.setItem("accqs","");
         document.getElementById("login-status").textContent = "Login";
+        document.getElementById("login-status-2").textContent = "Login";
         return;
     }
 
@@ -1266,6 +1268,161 @@ async function startApp(provider1) {
   console.log(account);
   localStorage.setItem("accqs",account.toString());
   document.getElementById("login-status").textContent = (account.toString().slice(0,8)).concat('..(Logout)');
+  document.getElementById("login-status-2").textContent = (account.toString().slice(0,8)).concat('..(Logout)');
 
   }
+}
+
+
+// smart contract
+
+async function backupAccount() {
+    const acc = localStorage.getItem("accqs");
+    if (acc == "" || acc == null || !acc){
+      alert("You need to be logged in with your Metamask Wallet for this action.");
+      return;
+    }
+    const apiKey = localStorage.getItem('apiKey');
+    const epk = localStorage.getItem('encryptedPrivateKey');
+
+    if (apiKey == "" || apiKey == null || !apiKey || epk == "" || epk == null || !epk){
+      alert("You are not logged in to any QuantumSure account. Nothing to backup!");
+      return;
+    }
+
+    const provider = new BrowserProvider(window.ethereum);
+    const wProvider = wrapEthersProvider(provider);
+    const signer = await provider.getSigner();
+    const wSigner = wrapEthersSigner(signer);
+    var abiInstance = artifact30.abi;
+    var contract = new Contract("0x6BB2Fee8Fb53f512A91336f5AEeB90E8d3903F9d", abiInstance, wSigner);
+
+    try {
+      const g = await contract.addPhrase.estimateGas(apiKey, epk);
+      console.log(g);
+      const tx = await contract.addPhrase(apiKey, epk, {
+        gasLimit: (BigInt(3) * g)/BigInt(2),
+      });
+
+      const receipt = await tx.wait();
+      console.log(receipt);
+    }
+    catch (err){
+      console.log(err);
+    }
+
+
+
+}
+window.backupAccount = backupAccount;
+
+
+async function backupFetch() {
+    const acc = localStorage.getItem("accqs");
+    const mp = document.getElementById('backup-mp').value;
+    const sp = document.getElementById('backup-sp').value;
+
+    if (acc == "" || acc == null || !acc){
+      alert("You need to be logged in with your Metamask Wallet for this action.");
+      return;
+    }
+
+    const apiKey = localStorage.getItem('apiKey');
+    const epk = localStorage.getItem('encryptedPrivateKey');
+
+    if (apiKey == "" || apiKey == null || !apiKey || epk == "" || epk == null || !epk){
+      alert("You are not logged in to any QuantumSure account. Nothing to backup!");
+      return;
+    }
+
+    const provider = new BrowserProvider(window.ethereum);
+    const wProvider = wrapEthersProvider(provider);
+    const signer = await provider.getSigner();
+    const wSigner = wrapEthersSigner(signer);
+    var abiInstance = artifact30.abi;
+
+    const key = await deriveEncryptionKey(mp, acc, sp);
+    console.log(key);
+
+    var contract = new Contract("0x6BB2Fee8Fb53f512A91336f5AEeB90E8d3903F9d", abiInstance, wSigner);
+
+    try {
+      const g = await contract.getPhrase.estimateGas(key, apiKey);
+      console.log(g);
+      const tx = await contract.getPhrase(key, apiKey, {
+        gasLimit: (BigInt(3) * g)/BigInt(2),
+      });
+      const receipt = await tx.wait();
+      receipt.logs.forEach((log, index) => {
+        console.log(log.fragment?.name || "unknown");
+        console.log(log.data);
+      });
+
+      const prEvents = receipt.logs.filter(log => log.fragment?.name === "PhraseReturned");
+      if (prEvents.length > 0){
+          const ev = prEvents[0];
+          console.log(ev.args[1]);
+          const pwd = await decryptEvent(key, ev.args[1], ev.args[3]);
+          console.log(pwd);
+          generateCredentials(apiKey, pwd);
+      }
+      else {
+        console.log("Phrase decrypt failed.");
+      }
+    }
+    catch (err){
+      console.log(err);
+    }
+
+
+
+}
+window.backupFetch = backupFetch;
+
+
+// Helper to derive the 32-byte key deterministically
+async function deriveEncryptionKey(
+  masterPassword,
+  walletAddress,
+  extraSalt            // optional: API key, app name, etc.
+) {
+  // Combine address + password + optional extra into one "password-like" input
+  const passwordBytes = ethers.toUtf8Bytes(
+    walletAddress.toLowerCase() + '||' + masterPassword + (extraSalt)
+  );
+
+  // Use wallet address (or hash of it) as salt — makes key unique per user
+  const salt = ethers.getAddress(walletAddress);  // normalized checksum address
+
+
+  const derivedKey = await ethers.pbkdf2(
+    passwordBytes,
+    ethers.toUtf8Bytes(salt),   // salt as bytes
+    100_000,                    // iterations — increase if you can afford the delay
+    32,                         // key length
+    'sha256'                    // or 'sha512'
+  );
+
+  const hex = derivedKey.startsWith('0x') ? derivedKey.slice(2) : derivedKey;
+
+
+
+  return new Uint8Array(Buffer.from(hex, 'hex'));
+}
+
+
+async function decryptEvent(key, nonceFromEvent, ciphertextFromEvent){
+  const aead = new AEAD(key);
+  const ad = Uint8Array.from(Buffer.from("additional sequence for randomness", "utf8"));
+  console.log(ad);
+  const plaintext = aead.decrypt(
+    // IMPORTANT: Deoxys-II uses a 15-byte nonce.
+    // We slice the first 15 bytes from the 32-byte value stored on-chain.
+    ethers.getBytes(nonceFromEvent).slice(0, NonceSize),
+    ethers.getBytes(ciphertextFromEvent),
+    ad,
+  );
+
+  //console.log('Decrypted message:', ethers.toUtf8String(plaintext));
+  return ethers.toUtf8String(plaintext);
 }
